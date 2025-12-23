@@ -39,49 +39,62 @@ li a {
 li:hover {
   background: #e0f7fa;
 }
+.category {
+  margin-top: 40px;
+  font-size: 22px;
+  color: #006064;
+  font-weight: bold;
+}
 </style>
 </head>
 <body>
 
 <h1>KCSE & Courses PDF Library</h1>
-<ul id="exam-list"></ul>
+<div id="content"></div>
 
 <script>
 const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
-const sheetsIndex = "Sheets"; // sheet that lists Sheet1, Sheet2, etc
-const ul = document.getElementById("exam-list");
+const sheetsIndex = "Sheets";
+const container = document.getElementById("content");
 
-// Load list of sheet names
+// Load available sheet names
 fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetsIndex}`)
   .then(res => res.text())
   .then(text => {
     const json = JSON.parse(text.substring(47, text.length - 2));
-    const sheetRows = json.table.rows || [];
+    const sheets = json.table.rows || [];
 
-    sheetRows.forEach(row => {
+    sheets.forEach(row => {
       const sheetName = row.c[0]?.v;
       if (sheetName) loadSheet(sheetName);
     });
   });
 
 function loadSheet(sheetName) {
+  const heading = document.createElement("div");
+  heading.className = "category";
+  heading.textContent = sheetName;
+  container.appendChild(heading);
+
+  const ul = document.createElement("ul");
+  container.appendChild(ul);
+
   fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`)
     .then(res => res.text())
     .then(text => {
       const json = JSON.parse(text.substring(47, text.length - 2));
       const rows = json.table.rows || [];
 
-      rows.forEach(r => {
-        const cell = r.c[0];
-        if (!cell) return;
-
-        const title = cell.v;
-        const link = cell.f?.match(/href="([^"]+)"/)?.[1];
-
-        if (!title || !link) return;
+      rows.forEach((r, index) => {
+        const title = r.c[0]?.v;
+        if (!title) return;
 
         const li = document.createElement("li");
-        li.innerHTML = `<a href="${link}" target="_blank">${title}</a>`;
+        li.innerHTML = `
+          <a href="pdf-view.html?sheet=${encodeURIComponent(sheetName)}&row=${index + 1}">
+            ${title}
+          </a>
+        `;
         ul.appendChild(li);
       });
     });
