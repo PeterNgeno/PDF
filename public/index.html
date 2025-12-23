@@ -44,36 +44,41 @@ li:hover {
 const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
 const ul = document.getElementById("exam-list");
 
+// List of sheets you have created
+const sheets = [
+  "Sheet1",
+  "Sheet2",
+  "Sheet3",
+  "Sheet4",
+  "Sheet5"
+  // Add more sheets here as you create them
+];
+
 async function loadSheets() {
-  let i = 1;
-  while(true) {
-    const sheetName = `Sheet${i}`;
+  let count = 1; // for numbering visible links
+  for(const sheetName of sheets){
     const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
     try {
       const res = await fetch(sheetURL);
       const text = await res.text();
       const json = JSON.parse(text.substring(47,text.length-2));
-      
-      // Stop if no rows exist in the sheet
-      if(!json.table.rows || json.table.rows.length === 0) break;
 
-      const firstRow = json.table.rows[0].c || [];
+      const firstRow = json.table.rows?.[0]?.c || [];
       const title = firstRow[0]?.v;
 
-      // Stop if first row has no title
-      if(!title || title.trim() === "") break;
+      // Only add if title exists
+      if(title && title.trim() !== ""){
+        const li = document.createElement("li");
+        li.textContent = `${count}. ${title}`;
+        li.addEventListener("click",()=> {
+          window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
+        });
+        ul.appendChild(li);
+        count++;
+      }
 
-      const li = document.createElement("li");
-      li.textContent = `${i}. ${title}`;
-      li.addEventListener("click",()=> {
-        window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
-      });
-      ul.appendChild(li);
-
-      i++;
     } catch(e) {
       console.log(`Error reading ${sheetName}:`, e);
-      break; // stop loop on any error
     }
   }
 }
