@@ -6,35 +6,32 @@
 
 <title>Lyrics</title>
 
-<!-- PDF LIBRARY -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-:root {
-  --accent: #f2c94c;
-  --bg: #f2f4f8;
-  --text-dark: #222;
-  --header-bg: #003366;
+:root{
+  --bg:#f2f4f8;
+  --dark:#003366;
 }
 
 body{
   margin:0;
-  background: var(--bg);
-  font-family: Georgia, serif;
-  color: var(--text-dark);
+  background:var(--bg);
+  font-family:Georgia, serif;
 }
 
-/* HEADER */
+/* CONTAINER */
 .header{
-  position: relative;
-  max-width: 900px;
-  margin: 30px auto;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
-  padding: 30px;
+  max-width:900px;
+  margin:30px auto;
+  background:#fff;
+  border-radius:12px;
+  box-shadow:0 5px 15px rgba(0,0,0,.15);
+  padding:30px;
+  position:relative;
 }
 
+/* LOGO */
 .logo{
   position:absolute;
   top:20px;
@@ -47,8 +44,8 @@ body{
 .back-link{
   display:inline-block;
   margin-bottom:20px;
-  color:#003366;
   font-weight:bold;
+  color:var(--dark);
   text-decoration:none;
 }
 
@@ -57,14 +54,16 @@ body{
   text-align:center;
   font-size:32px;
   font-weight:bold;
-  color:#003366;
-  cursor:pointer;
 }
-.song-title:hover{
-  text-decoration: underline;
+.song-title a{
+  color:var(--dark);
+  text-decoration:none;
+}
+.song-title a:hover{
+  text-decoration:underline;
 }
 
-/* BUTTON */
+/* DOWNLOAD BUTTON */
 .pdf-btn{
   display:block;
   margin:20px auto;
@@ -76,9 +75,6 @@ body{
   border:none;
   border-radius:8px;
   cursor:pointer;
-}
-.pdf-btn:hover{
-  background:#002244;
 }
 
 /* IMAGE */
@@ -105,7 +101,29 @@ body{
   margin-top:30px;
 }
 
+/* WATERMARK */
+.watermark{
+  position:fixed;
+  top:45%;
+  left:50%;
+  transform:translate(-50%,-50%) rotate(-25deg);
+  font-size:36px;
+  color:rgba(0,0,0,0.08);
+  z-index:0;
+  pointer-events:none;
+}
+
+.watermark img{
+  width:120px;
+  opacity:0.08;
+  display:block;
+  margin:auto;
+}
+
 /* PDF MODE */
+.pdf-hide{
+  display:none !important;
+}
 .pdf-mode iframe{
   display:none;
 }
@@ -115,67 +133,75 @@ body{
 <body>
 
 <div class="header" id="pdfContent">
+
+  <!-- WATERMARK -->
+  <div class="watermark">
+    <img src="peron.png" alt="">
+    www.perontips.co.ke
+  </div>
+
   <img src="cross.png" class="logo">
 
-  <a class="back-link" href="lyrics.html">← Back to All Lyrics</a>
+  <a class="back-link pdf-hide" href="lyrics.html">← Back to All Lyrics</a>
 
-  <h1 class="song-title" id="title" onclick="generatePDF()"></h1>
+  <h1 class="song-title" id="title"></h1>
 
-  <button class="pdf-btn" onclick="generatePDF()">⬇ Download PDF</button>
+  <button class="pdf-btn pdf-hide" onclick="generatePDF()">⬇ Download PDF</button>
 
   <img id="image" class="song-image">
 
   <div class="lyrics" id="lyrics"></div>
 
   <div class="video-box" id="video"></div>
+
 </div>
 
 <script>
 const params = new URLSearchParams(window.location.search);
 const id = params.get("id");
 
-/* ✅ NEW GOOGLE SHEET */
 const sheetURL =
 "https://docs.google.com/spreadsheets/d/1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs/gviz/tq?tqx=out:json";
 
 fetch(sheetURL)
-  .then(res => res.text())
-  .then(data => {
-    const json = JSON.parse(data.substring(47, data.length - 2));
-    const row = json.table.rows[id].c;
+.then(res=>res.text())
+.then(data=>{
+  const json = JSON.parse(data.substring(47,data.length-2));
+  const row = json.table.rows[id].c;
 
-    const title = row[0]?.v || "";
-    const lyrics = row[1]?.v || "";
-    const image = row[2]?.v || "";
-    const youtube = row[3]?.v || "";
+  const title = row[0]?.v || "";
+  const lyrics = row[1]?.v || "";
+  const image = row[2]?.v || "";
+  const youtube = row[3]?.v || "";
 
-    document.getElementById("title").textContent = title;
-    document.getElementById("lyrics").textContent = lyrics;
-    document.getElementById("image").src = image;
+  document.getElementById("title").innerHTML =
+    `<a href="${location.href}">${title}</a>`;
 
-    if(youtube){
-      const ytId = youtube.includes("v=")
-        ? youtube.split("v=")[1]
-        : youtube.split(".be/")[1];
+  document.getElementById("lyrics").textContent = lyrics;
+  document.getElementById("image").src = image;
 
-      document.getElementById("video").innerHTML =
-        `<iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe>`;
-    }
-  });
+  if(youtube){
+    const ytId = youtube.includes("v=")
+      ? youtube.split("v=")[1]
+      : youtube.split(".be/")[1];
 
-/* PDF FUNCTION */
+    document.getElementById("video").innerHTML =
+      `<iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe>`;
+  }
+});
+
 function generatePDF(){
-  const element = document.getElementById("pdfContent");
-  element.classList.add("pdf-mode");
+  const el = document.getElementById("pdfContent");
+  el.classList.add("pdf-mode");
 
-  html2pdf().from(element).set({
-    margin: 10,
-    filename: document.getElementById("title").textContent + ".pdf",
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  html2pdf().from(el).set({
+    margin:10,
+    filename: document.title + ".pdf",
+    image:{type:'jpeg',quality:0.98},
+    html2canvas:{scale:2},
+    jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
   }).save().then(()=>{
-    element.classList.remove("pdf-mode");
+    el.classList.remove("pdf-mode");
   });
 }
 </script>
