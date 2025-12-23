@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>KCSE & Courses PDF Library</title>
 <style>
 body {
@@ -44,46 +44,34 @@ li:hover {
 const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
 const ul = document.getElementById("exam-list");
 
-// List of sheets you have created
-const sheets = [
-  "Sheet1",
-  "Sheet2",
-  "Sheet3",
-  "Sheet4",
-  "Sheet5"
-  // Add more sheets here as you create them
-];
+// Fetch SheetIndex to get existing sheets
+const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=SheetIndex`;
 
-async function loadSheets() {
-  let count = 1; // for numbering visible links
-  for(const sheetName of sheets){
-    const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
-    try {
-      const res = await fetch(sheetURL);
-      const text = await res.text();
-      const json = JSON.parse(text.substring(47,text.length-2));
+fetch(sheetURL)
+  .then(res=>res.text())
+  .then(data=>{
+    const json = JSON.parse(data.substring(47, data.length-2));
+    const rows = json.table.rows || [];
 
-      const firstRow = json.table.rows?.[0]?.c || [];
-      const title = firstRow[0]?.v;
+    rows.forEach((row, idx)=>{
+      const cells = row.c || [];
+      const sheetName = cells[0]?.v;
+      const title = cells[1]?.v;
 
-      // Only add if title exists
-      if(title && title.trim() !== ""){
-        const li = document.createElement("li");
-        li.textContent = `${count}. ${title}`;
-        li.addEventListener("click",()=> {
-          window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
-        });
-        ul.appendChild(li);
-        count++;
-      }
+      if(!sheetName || !title) return; // skip empty rows
 
-    } catch(e) {
-      console.log(`Error reading ${sheetName}:`, e);
-    }
-  }
-}
-
-loadSheets();
+      const li = document.createElement("li");
+      li.textContent = `${idx+1}. ${title}`;
+      li.addEventListener("click",()=>{
+        window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
+      });
+      ul.appendChild(li);
+    });
+  })
+  .catch(err=>{
+    console.log("Error loading SheetIndex:", err);
+    ul.innerHTML = "<li>Unable to load content.</li>";
+  });
 </script>
 </body>
 </html>
