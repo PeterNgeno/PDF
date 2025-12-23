@@ -72,7 +72,16 @@ body {
   font-size: 14px;
 }
 
-/* ===== PDF AREA ===== */
+.download-btn:disabled {
+  background: #888;
+  cursor: not-allowed;
+}
+
+/* ===== PDF AREA (HIDDEN INITIALLY) ===== */
+#pdfArea {
+  display: none;
+}
+
 .magazine {
   background: white;
   max-width: 210mm;
@@ -147,13 +156,15 @@ body {
 
   <!-- MAIN -->
   <div class="main">
-    <button class="download-btn" onclick="downloadPDF()">Download PDF</button>
+    <button class="download-btn" id="downloadBtn" onclick="downloadPDF()" disabled>
+      Download PDF
+    </button>
 
     <div class="magazine" id="pdfArea">
       <div class="watermark">www.perontips.co.ke</div>
 
       <div class="content">
-        <div id="pdfTitle" class="pdf-title">Select a document</div>
+        <div id="pdfTitle" class="pdf-title"></div>
         <div id="questions"></div>
       </div>
     </div>
@@ -194,13 +205,17 @@ async function loadTitles() {
   });
 }
 
-/* ===== LOAD CONTENT SHEET ===== */
+/* ===== LOAD CONTENT ONLY WHEN TITLE CLICKED ===== */
 async function loadSheet(sheetName, title, el) {
   document.querySelectorAll(".title-link").forEach(d => d.classList.remove("active"));
   el.classList.add("active");
 
   currentSheet = sheetName;
   currentTitle = title;
+
+  // Show PDF area and enable download
+  document.getElementById("pdfArea").style.display = "block";
+  document.getElementById("downloadBtn").disabled = false;
 
   document.getElementById("pdfTitle").innerText = title;
 
@@ -213,8 +228,8 @@ async function loadSheet(sheetName, title, el) {
 
   rows.forEach((row, i) => {
     const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    const q = cols[0]?.replace(/"/g, "");
-    const img = cols[1]?.replace(/"/g, "");
+    const q = cols[0]?.replace(/"/g, "").trim();
+    const img = cols[1]?.replace(/"/g, "").trim();
 
     if (!q) return;
 
@@ -238,10 +253,7 @@ function filterTitles(text) {
 
 /* ===== DOWNLOAD PDF ===== */
 function downloadPDF() {
-  if (!currentSheet) {
-    alert("Please select a document first");
-    return;
-  }
+  if (!currentSheet) return;
 
   html2pdf().set({
     filename: currentTitle + ".pdf",
