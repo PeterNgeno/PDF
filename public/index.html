@@ -1,62 +1,66 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
-<meta charset="utf-8">
-<title>Exam PDF Library</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KCSE & Courses PDF Library</title>
 <style>
-body{
-  font-family:Georgia,serif;
-  background:#f4f4f4;
+body {
+  font-family: Georgia, serif;
+  background: #f4f4f4;
+  margin:0;
   padding:20px;
 }
-.container{
-  max-width:800px;
+h1 {
+  text-align:center;
+  color:#003366;
+}
+ul {
+  max-width: 800px;
   margin:auto;
+  padding:0;
+  list-style:none;
 }
-.item{
+li {
   background:#fff;
-  padding:18px;
-  margin-bottom:12px;
-  font-size:22px;
-  font-weight:bold;
+  margin:10px 0;
+  padding:15px 20px;
+  font-size:18px;
+  border-left:6px solid #00b894;
   cursor:pointer;
-  border-left:6px solid #003366;
-  box-shadow:0 2px 6px rgba(0,0,0,.2);
+  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  transition:0.2s;
 }
-.item:hover{
-  background:#eaf2ff;
+li:hover {
+  background:#e0f7fa;
 }
 </style>
 </head>
-
 <body>
-<div class="container">
-  <h1>Select Exam Type</h1>
-  <div id="list"></div>
-</div>
+<h1>KCSE & Courses PDF Library</h1>
+<ul id="exam-list"></ul>
 
 <script>
-const sheetURL =
-"https://docs.google.com/spreadsheets/d/1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs/gviz/tq?tqx=out:json";
+const sheetBaseURL = "https://docs.google.com/spreadsheets/d/1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs/gviz/tq?tqx=out:json";
 
-fetch(sheetURL)
-.then(res=>res.text())
-.then(data=>{
-  const json=JSON.parse(data.substring(47,data.length-2));
-  const rows=json.table.rows;
-  const list=document.getElementById("list");
+// List of sheets (could be Sheet1, Sheet2 ... Sheet1000)
+const sheets = [
+  {name:"Physics Past Papers", tab:"Sheet1"},
+  {name:"Architectural Notes", tab:"Sheet2"},
+  {name:"Mathematics", tab:"Sheet3"},
+  // Add up to 1000 sheets here
+];
 
-  rows.forEach(r=>{
-    const name=r.c[0].v;
-    const sheet=r.c[1].v;
-    const div=document.createElement("div");
-    div.className="item";
-    div.textContent=name;
-    div.onclick=()=>location.href=`viewer.html?sheet=${sheet}`;
-    list.appendChild(div);
+const ul = document.getElementById("exam-list");
+
+sheets.forEach((sheet, idx)=>{
+  const li = document.createElement("li");
+  li.textContent = `${idx+1}. ${sheet.name}`;
+  li.addEventListener("click",()=> {
+    // open pdf page
+    window.location.href = `pdf-view.html?sheet=${sheet.tab}&title=${encodeURIComponent(sheet.name)}`;
   });
+  ul.appendChild(li);
 });
 </script>
 </body>
