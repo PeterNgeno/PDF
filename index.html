@@ -2,224 +2,244 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>KCSE Auto PDF</title>
+<title>KCSE & Course PDFs</title>
 
-<!-- PDF Library -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-/* ================= PAGE SETUP ================= */
-@page {
-  size: A4;
-  margin: 25mm;
-}
-
 body {
-  margin: 0;
-  background: #f0f0f0;
   font-family: Georgia, serif;
+  background: #f2f2f2;
+  margin: 0;
 }
 
-/* ================= MAGAZINE ================= */
+/* ===== LAYOUT ===== */
+.container {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar {
+  width: 300px;
+  background: #111;
+  color: #fff;
+  padding: 20px;
+}
+
+.sidebar h2 {
+  font-size: 18px;
+  margin-bottom: 15px;
+}
+
+.sheet-title {
+  cursor: pointer;
+  padding: 10px;
+  background: #222;
+  margin-bottom: 8px;
+  border-left: 4px solid transparent;
+}
+
+.sheet-title:hover,
+.sheet-title.active {
+  background: #333;
+  border-left: 4px solid #00b894;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  flex: 1;
+  padding: 30px;
+}
+
+.download-btn {
+  background: #00b894;
+  color: white;
+  padding: 10px 18px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  margin-bottom: 15px;
+}
+
+/* ===== PDF MAGAZINE ===== */
 .magazine {
   background: white;
   max-width: 210mm;
-  margin: auto;
   padding: 30px;
+  margin: auto;
   position: relative;
-  overflow: hidden;
 }
 
-/* ===== IMAGE WATERMARK ===== */
+/* IMAGE WATERMARK */
 .magazine::before {
   content: "";
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-image: url("peron.png");
-  background-repeat: repeat;
+  inset: 0;
+  background: url("peron.png") repeat;
   background-size: 180px;
   opacity: 0.05;
   transform: rotate(-25deg);
-  z-index: 0;
 }
 
-/* ===== TEXT WATERMARK ===== */
+/* TEXT WATERMARK */
 .watermark-text {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(-30deg);
-  font-size: 48px;
-  font-weight: bold;
+  font-size: 46px;
   color: rgba(0,0,0,0.08);
-  z-index: 0;
+  font-weight: bold;
   pointer-events: none;
-  white-space: nowrap;
 }
 
-/* ===== CONTENT ===== */
 .content {
   position: relative;
   z-index: 2;
 }
 
-/* ================= HEADER ================= */
+/* HEADER */
 .header {
   text-align: center;
   border-bottom: 3px solid #000;
   margin-bottom: 30px;
-  padding-bottom: 15px;
 }
 
 .header h1 {
   margin: 0;
-  font-size: 30px;
+  font-size: 28px;
 }
 
 .header p {
-  margin: 5px 0 0;
   font-size: 14px;
   color: #444;
 }
 
-/* ================= QUESTIONS ================= */
+/* QUESTIONS */
 .question {
-  margin-bottom: 30px;
+  margin-bottom: 25px;
   page-break-inside: avoid;
 }
 
 .question-number {
   font-weight: bold;
-  font-size: 16px;
-}
-
-.question-text {
-  margin: 10px 0;
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-/* ================= DIAGRAM ================= */
-.diagram {
-  margin: 15px 0;
-  text-align: center;
 }
 
 .diagram img {
   max-width: 100%;
   border: 1px solid #ccc;
-  padding: 5px;
-}
-
-/* ================= FOOTER ================= */
-.footer {
-  margin-top: 40px;
-  text-align: center;
-  font-size: 12px;
-  color: #666;
-  border-top: 1px solid #ccc;
-  padding-top: 10px;
-}
-
-@media print {
-  body {
-    background: white;
-  }
+  margin-top: 10px;
 }
 </style>
 </head>
 
 <body>
 
-<div class="magazine">
+<div class="container">
 
-  <div class="watermark-text">www.perontips.co.ke</div>
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <h2>Available Papers</h2>
+    <div id="sheetList"></div>
+  </div>
 
-  <div class="content">
-    <div class="header">
-      <h1>KCSE Past Examination</h1>
-      <p>Official Revision Material</p>
-    </div>
+  <!-- MAIN -->
+  <div class="main">
+    <button class="download-btn" onclick="downloadPDF()">Download PDF</button>
 
-    <div id="questions"></div>
+    <div class="magazine" id="pdfArea">
+      <div class="watermark-text">www.perontips.co.ke</div>
 
-    <div class="footer">
-      © www.perontips.co.ke — Unauthorized distribution prohibited
+      <div class="content">
+        <div class="header">
+          <h1 id="paperTitle">Select a Paper</h1>
+          <p id="paperType"></p>
+        </div>
+
+        <div id="questions"></div>
+      </div>
     </div>
   </div>
 
 </div>
 
 <script>
-/* ================= CONFIG ================= */
+/* ===== CONFIG ===== */
 
 const SHEET_ID = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
 
-/* ADD ALL SHEETS HERE */
+/* DEFINE SHEETS HERE */
 const SHEETS = [
   "Sheet1",
   "Sheet3",
   "Sheet4"
 ];
 
-/* ================= FUNCTIONS ================= */
+let currentSheet = "";
 
-async function loadSheet(sheetName) {
+/* ===== LOAD TITLES ===== */
+
+const sheetList = document.getElementById("sheetList");
+
+SHEETS.forEach(sheet => {
+  const div = document.createElement("div");
+  div.className = "sheet-title";
+  div.innerText = sheet;
+  div.onclick = () => loadSheet(sheet, div);
+  sheetList.appendChild(div);
+});
+
+/* ===== LOAD SHEET CONTENT ===== */
+
+async function loadSheet(sheetName, el) {
+  document.querySelectorAll(".sheet-title").forEach(s => s.classList.remove("active"));
+  el.classList.add("active");
+
+  currentSheet = sheetName;
+
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
-  const response = await fetch(url);
-  const csv = await response.text();
+  const csv = await fetch(url).then(r => r.text());
+  const rows = csv.split("\n").map(r => r.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/));
 
-  const rows = csv.split("\n").slice(1);
+  /* FIRST ROW = TYPE */
+  const paperType = rows[0][0].replace(/"/g, "");
+  document.getElementById("paperType").innerText = paperType;
+  document.getElementById("paperTitle").innerText = sheetName;
+
   const container = document.getElementById("questions");
   container.innerHTML = "";
 
-  rows.forEach((row, index) => {
-    const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    const question = cols[0]?.replace(/"/g, "").trim();
-    const image = cols[1]?.replace(/"/g, "").trim();
+  rows.slice(1).forEach((cols, i) => {
+    const q = cols[0]?.replace(/"/g, "");
+    const img = cols[1]?.replace(/"/g, "");
 
-    if (!question) return;
+    if (!q) return;
 
-    const div = document.createElement("div");
-    div.className = "question";
-    div.innerHTML = `
-      <div class="question-number">Question ${index + 1}</div>
-      <div class="question-text">${question}</div>
-      ${image ? `<div class="diagram"><img src="${image}"></div>` : ""}
+    container.innerHTML += `
+      <div class="question">
+        <div class="question-number">Question ${i + 1}</div>
+        <div>${q}</div>
+        ${img ? `<div class="diagram"><img src="${img}"></div>` : ""}
+      </div>
     `;
-    container.appendChild(div);
   });
 }
 
-async function generatePDF(sheetName) {
-  document.title = sheetName;
+/* ===== DOWNLOAD PDF ===== */
 
-  await html2pdf()
-    .set({
-      margin: 10,
-      filename: `${sheetName}.pdf`,
-      image: { type: "jpeg", quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "mm", format: "a4", orientation: "portrait" }
-    })
-    .from(document.querySelector(".magazine"))
-    .save();
-}
-
-async function generateAllPDFs() {
-  for (const sheet of SHEETS) {
-    await loadSheet(sheet);
-    await new Promise(r => setTimeout(r, 1500));
-    await generatePDF(sheet);
-    await new Promise(r => setTimeout(r, 2000));
+function downloadPDF() {
+  if (!currentSheet) {
+    alert("Please select a paper first");
+    return;
   }
-}
 
-/* ================= START ================= */
-window.onload = generateAllPDFs;
+  html2pdf().set({
+    filename: currentSheet + ".pdf",
+    html2canvas: { scale: 2, useCORS: true },
+    jsPDF: { format: "a4", orientation: "portrait" }
+  }).from(document.getElementById("pdfArea")).save();
+}
 </script>
 
 </body>
