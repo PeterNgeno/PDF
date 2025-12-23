@@ -51,29 +51,29 @@ async function loadSheets() {
     const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
     try {
       const res = await fetch(sheetURL);
-      if(!res.ok) break; // stop if sheet does not exist
       const text = await res.text();
       const json = JSON.parse(text.substring(47,text.length-2));
-      const firstRow = json.table.rows[0]?.c || [];
+      
+      // Stop if no rows exist in the sheet
+      if(!json.table.rows || json.table.rows.length === 0) break;
+
+      const firstRow = json.table.rows[0].c || [];
       const title = firstRow[0]?.v;
 
-      // Only add if title exists
-      if(title && title.trim() !== ""){
-        const li = document.createElement("li");
-        li.textContent = `${i}. ${title}`;
-        li.addEventListener("click",()=> {
-          window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
-        });
-        ul.appendChild(li);
-      } else {
-        // If first row is empty, assume sheet is not yet used, stop loop
-        break;
-      }
+      // Stop if first row has no title
+      if(!title || title.trim() === "") break;
+
+      const li = document.createElement("li");
+      li.textContent = `${i}. ${title}`;
+      li.addEventListener("click",()=> {
+        window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
+      });
+      ul.appendChild(li);
 
       i++;
     } catch(e) {
-      // If fetch fails (sheet does not exist), stop loop
-      break;
+      console.log(`Error reading ${sheetName}:`, e);
+      break; // stop loop on any error
     }
   }
 }
