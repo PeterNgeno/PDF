@@ -111,84 +111,98 @@ const sheetName = params.get("sheet");
 const pdfTitle = params.get("title") || "Document";
 document.getElementById("pdf-title").textContent = pdfTitle;
 
-const sheetURL = `https://docs.google.com/spreadsheets/d/1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
+const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
 const contentDiv = document.getElementById("pdf-content");
 
 fetch(sheetURL)
-.then(res=>res.text())
-.then(data=>{
-  const json = JSON.parse(data.substring(47,data.length-2));
+  .then(res => res.text())
+  .then(data => {
+    const json = JSON.parse(data.substring(47, data.length-2));
+    const rows = json.table.rows || [];
 
-  json.table.rows?.forEach((row,i)=>{
-    const cells = row.c || [];
-    const title = cells[0]?.v || "";
-    const lyrics = cells[1]?.v || "";
-    const image = cells[2]?.v || "";
-    const youtube = cells[3]?.v || "";
-    const sourceLink = cells[4]?.v || "#"; // optional link for the title
-
-    if(!title) return; // skip rows without title
-
-    const songDiv = document.createElement("div");
-    songDiv.className = "song";
-
-    // Title as clickable link
-    const h2 = document.createElement("h2");
-    const a = document.createElement("a");
-    a.href = sourceLink || "#";
-    a.textContent = title;
-    a.target = "_blank";
-    h2.appendChild(a);
-    songDiv.appendChild(h2);
-
-    // Image
-    if(image){
-      const img = document.createElement("img");
-      img.src = image;
-      songDiv.appendChild(img);
-    }
-
-    // Lyrics/content
-    if(lyrics){
+    if(rows.length === 0){
       const p = document.createElement("p");
-      p.textContent = lyrics;
-      songDiv.appendChild(p);
+      p.textContent = "No content found in this sheet.";
+      contentDiv.appendChild(p);
+      return;
     }
 
-    // YouTube video
-    if(youtube){
-      let ytId = "";
-      if(youtube.includes("v=")){
-        ytId = youtube.split("v=")[1].split("&")[0];
-      } else if(youtube.includes("youtu.be/")){
-        ytId = youtube.split("youtu.be/")[1].split("?")[0];
+    rows.forEach((row) => {
+      const cells = row.c || [];
+      const title = cells[0]?.v || "";
+      const lyrics = cells[1]?.v || "";
+      const image = cells[2]?.v || "";
+      const youtube = cells[3]?.v || "";
+      const sourceLink = cells[4]?.v || "#";
+
+      if(!title) return; // skip rows without title
+
+      const songDiv = document.createElement("div");
+      songDiv.className = "song";
+
+      // Title as clickable link
+      const h2 = document.createElement("h2");
+      const a = document.createElement("a");
+      a.href = sourceLink || "#";
+      a.textContent = title;
+      a.target = "_blank";
+      h2.appendChild(a);
+      songDiv.appendChild(h2);
+
+      // Image
+      if(image){
+        const img = document.createElement("img");
+        img.src = image;
+        songDiv.appendChild(img);
       }
-      if(ytId){
-        const iframe = document.createElement("iframe");
-        iframe.src = `https://www.youtube.com/embed/${ytId}`;
-        iframe.allowFullscreen = true;
-        songDiv.appendChild(iframe);
+
+      // Lyrics
+      if(lyrics){
+        const p = document.createElement("p");
+        p.textContent = lyrics;
+        songDiv.appendChild(p);
       }
-    }
 
-    // Watermark text
-    const wmText = document.createElement("div");
-    wmText.className = "watermark-text";
-    wmText.textContent = "www.perontips.co.ke";
-    songDiv.appendChild(wmText);
+      // YouTube video
+      if(youtube){
+        let ytId = "";
+        if(youtube.includes("v=")){
+          ytId = youtube.split("v=")[1].split("&")[0];
+        } else if(youtube.includes("youtu.be/")){
+          ytId = youtube.split("youtu.be/")[1].split("?")[0];
+        }
+        if(ytId){
+          const iframe = document.createElement("iframe");
+          iframe.src = `https://www.youtube.com/embed/${ytId}`;
+          iframe.allowFullscreen = true;
+          songDiv.appendChild(iframe);
+        }
+      }
 
-    // Watermark image
-    const wmImg = document.createElement("img");
-    wmImg.src = "peron.png";
-    wmImg.className = "watermark-img";
-    songDiv.appendChild(wmImg);
+      // Watermark text
+      const wmText = document.createElement("div");
+      wmText.className = "watermark-text";
+      wmText.textContent = "www.perontips.co.ke";
+      songDiv.appendChild(wmText);
 
-    contentDiv.appendChild(songDiv);
+      // Watermark image
+      const wmImg = document.createElement("img");
+      wmImg.src = "peron.png";
+      wmImg.className = "watermark-img";
+      songDiv.appendChild(wmImg);
+
+      contentDiv.appendChild(songDiv);
+    });
+  })
+  .catch(err => {
+    const p = document.createElement("p");
+    p.textContent = "Error loading sheet: " + err;
+    contentDiv.appendChild(p);
   });
-});
 
 // Download PDF
-document.getElementById("downloadBtn").addEventListener("click",()=>{
+document.getElementById("downloadBtn").addEventListener("click", () => {
   const opt = {
     margin:0.3,
     filename: pdfTitle+".pdf",
