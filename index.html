@@ -7,112 +7,109 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
-body {
-  margin: 0;
-  font-family: Georgia, serif;
-  background: #f4f4f4;
+body{
+  margin:0;
+  font-family:Georgia, serif;
+  background:#f4f4f4;
 }
 
-.page {
-  max-width: 1100px;
-  margin: auto;
-  padding: 25px;
+.page{
+  max-width:1100px;
+  margin:auto;
+  padding:25px;
 }
 
-h1 {
-  margin-top: 0;
+.search{
+  width:100%;
+  padding:12px;
+  font-size:16px;
+  margin-bottom:20px;
 }
 
-.search {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px;
-  margin-bottom: 20px;
+.title-link{
+  background:#fff;
+  padding:18px;
+  margin-bottom:14px;
+  font-size:20px;
+  font-weight:bold;
+  cursor:pointer;
+  border-left:6px solid #00b894;
+  box-shadow:0 2px 6px rgba(0,0,0,.08);
 }
 
-.title-link {
-  background: #fff;
-  padding: 18px;
-  margin-bottom: 14px;
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-  border-left: 6px solid #00b894;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+.title-link:hover{
+  background:#f0fff8;
 }
 
-.title-link:hover {
-  background: #f0fff8;
+.title-link.active{
+  border-left-color:#0984e3;
 }
 
-.title-link.active {
-  border-left-color: #0984e3;
+.title-link.pdf{
+  border-left-color:#d63031;
 }
 
-.download-btn {
-  display: none;
-  background: #00b894;
-  color: white;
-  border: none;
-  padding: 14px 22px;
-  font-size: 15px;
-  cursor: pointer;
-  margin: 25px 0;
+.download-btn{
+  display:none;
+  background:#00b894;
+  color:white;
+  border:none;
+  padding:14px 22px;
+  font-size:15px;
+  cursor:pointer;
+  margin:25px 0;
 }
 
-#pdfArea {
-  display: none;
-  background: white;
-  padding: 30px;
-  max-width: 210mm;
-  margin: auto;
-  position: relative;
+#pdfArea{
+  display:none;
+  background:white;
+  padding:30px;
+  max-width:210mm;
+  margin:auto;
+  position:relative;
 }
 
-#pdfArea::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  background: url("peron.png") repeat;
-  background-size: 180px;
-  opacity: 0.05;
-  transform: rotate(-25deg);
+#pdfArea::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:url("peron.png") repeat;
+  background-size:180px;
+  opacity:.05;
+  transform:rotate(-25deg);
 }
 
-.watermark {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-30deg);
-  font-size: 46px;
-  font-weight: bold;
-  color: rgba(0,0,0,0.08);
-  pointer-events: none;
+.watermark{
+  position:fixed;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%) rotate(-30deg);
+  font-size:46px;
+  font-weight:bold;
+  color:rgba(0,0,0,.08);
+  pointer-events:none;
 }
 
-.content {
-  position: relative;
-  z-index: 2;
+.content{position:relative;z-index:2}
+
+.pdf-title{
+  font-size:32px;
+  font-weight:bold;
+  text-align:center;
+  margin-bottom:30px;
+  border-bottom:3px solid #000;
+  padding-bottom:12px;
 }
 
-.pdf-title {
-  font-size: 32px;
-  font-weight: bold;
-  text-align: center;
-  margin-bottom: 30px;
-  border-bottom: 3px solid #000;
-  padding-bottom: 12px;
+.question{
+  margin-bottom:25px;
+  page-break-inside:avoid;
 }
 
-.question {
-  margin-bottom: 25px;
-  page-break-inside: avoid;
-}
-
-.diagram img {
-  max-width: 100%;
-  margin-top: 10px;
-  border: 1px solid #ccc;
+.diagram img{
+  max-width:100%;
+  margin-top:10px;
+  border:1px solid #ccc;
 }
 </style>
 </head>
@@ -127,9 +124,7 @@ h1 {
 
 <div id="titleList"></div>
 
-<button class="download-btn" id="downloadBtn" onclick="downloadPDF()">
-  Download PDF
-</button>
+<button class="download-btn" id="downloadBtn">Download PDF</button>
 
 <div id="pdfArea">
   <div class="watermark">www.perontips.co.ke</div>
@@ -143,86 +138,109 @@ h1 {
 
 <script>
 /* ===== CONFIG ===== */
-// Your published CSV link for the Index sheet
-const INDEX_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRO8naTtvq63fZm0cNQdzwl6R5KL6UQD06EHcwiGemkvvJ4JhdK_M6wtoQPQZQDFiIyQJ894pzNpNVj/pub?output=csv";
+const INDEX_CSV =
+"https://docs.google.com/spreadsheets/d/e/2PACX-1vRO8naTtvq63fZm0cNQdzwl6R5KL6UQD06EHcwiGemkvvJ4JhdK_M6wtoQPQZQDFiIyQJ894pzNpNVj/pub?output=csv";
 
 let currentTitle = "";
+let currentPDFLink = "";
 
-/* ===== LOAD TITLES FROM INDEX ===== */
-async function loadTitles() {
-  const csv = await fetch(INDEX_CSV).then(r => r.text());
-  const rows = csv.trim().split("\n"); // Do not slice(1) to ensure first row is read
+/* ===== LOAD TITLES ===== */
+async function loadTitles(){
+  const csv = await fetch(INDEX_CSV).then(r=>r.text());
+  const rows = csv.trim().split("\n");
   const list = document.getElementById("titleList");
   list.innerHTML = "";
 
-  rows.forEach((row, index) => {
-    if (!row) return;
-    const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    const sheetName = cols[0]?.replace(/"/g,"").trim();
-    const title = cols[1]?.replace(/"/g,"").trim();
-    const sheetCSV = cols[2]?.replace(/"/g,"").trim(); // Optional: per-sheet published CSV link
+  rows.forEach(row=>{
+    if(!row) return;
 
-    if(!sheetName || !title) return;
+    const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    const type = cols[0]?.replace(/"/g,"").trim();
+    const title = cols[1]?.replace(/"/g,"").trim();
+    const link  = cols[2]?.replace(/"/g,"").trim();
+
+    if(!type || !title) return;
 
     const div = document.createElement("div");
     div.className = "title-link";
     div.textContent = title;
 
-    div.onclick = () => loadPDF(sheetCSV || sheetName, title, div);
+    /* ===== PDF ROW ===== */
+    if(type.toUpperCase()==="PDF" && link){
+      div.classList.add("pdf");
+
+      div.onclick = ()=>{
+        document.getElementById("pdfArea").style.display="none";
+        document.getElementById("downloadBtn").style.display="inline-block";
+        currentTitle = title;
+        currentPDFLink = link;
+
+        window.open(link,"_blank");
+
+        document.getElementById("downloadBtn").onclick = ()=>{
+          const dlink = link.replace("/view","/uc?export=download");
+          window.open(dlink,"_blank");
+        };
+      };
+    }
+    /* ===== SHEET CONTENT ===== */
+    else{
+      div.onclick = ()=>loadPDF(link||type,title,div);
+    }
+
     list.appendChild(div);
   });
 }
 
-/* ===== LOAD PDF CONTENT WHEN TITLE CLICKED ===== */
-async function loadPDF(sheetCSVorName, title, el) {
-  document.querySelectorAll(".title-link").forEach(d => d.classList.remove("active"));
+/* ===== LOAD SHEET CONTENT ===== */
+async function loadPDF(sheet,title,el){
+  document.querySelectorAll(".title-link").forEach(d=>d.classList.remove("active"));
   el.classList.add("active");
 
-  document.getElementById("pdfArea").style.display = "block";
-  document.getElementById("downloadBtn").style.display = "inline-block";
+  document.getElementById("pdfArea").style.display="block";
+  document.getElementById("downloadBtn").style.display="inline-block";
 
   currentTitle = title;
   document.getElementById("pdfTitle").innerText = title;
 
-  let url;
-  if(sheetCSVorName.startsWith("http")) {
-    url = sheetCSVorName; // use published CSV link
-  } else {
-    // fallback: auto-generate CSV link from sheet name
-    url = `https://docs.google.com/spreadsheets/d/e/2PACX-1vRO8naTtvq63fZm0cNQdzwl6R5KL6UQD06EHcwiGemkvvJ4JhdK_M6wtoQPQZQDFiIyQJ894pzNpNVj/pub?output=csv&sheet=${sheetCSVorName}`;
-  }
+  const url = sheet.startsWith("http")
+    ? sheet
+    : `https://docs.google.com/spreadsheets/d/e/2PACX-1vRO8naTtvq63fZm0cNQdzwl6R5KL6UQD06EHcwiGemkvvJ4JhdK_M6wtoQPQZQDFiIyQJ894pzNpNVj/pub?output=csv&sheet=${sheet}`;
 
   const csv = await fetch(url).then(r=>r.text());
   const rows = csv.trim().split("\n");
-
   const qDiv = document.getElementById("questions");
   qDiv.innerHTML = "";
 
   rows.forEach((row,i)=>{
-    if(!row) return;
     const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
     const q = cols[0]?.replace(/"/g,"").trim();
     const img = cols[1]?.replace(/"/g,"").trim();
     if(!q) return;
-    qDiv.innerHTML += `<div class="question">
+
+    qDiv.innerHTML += `
+    <div class="question">
       <strong>Question ${i+1}</strong><br>
       ${q}
-      ${img ? `<div class="diagram"><img src="${img}"></div>` : ""}
+      ${img?`<div class="diagram"><img src="${img}"></div>`:""}
     </div>`;
   });
+
+  document.getElementById("downloadBtn").onclick = downloadPDF;
 }
 
 /* ===== SEARCH ===== */
 function filterTitles(text){
   document.querySelectorAll(".title-link").forEach(d=>{
-    d.style.display=d.textContent.toLowerCase().includes(text.toLowerCase())?"block":"none";
+    d.style.display = d.textContent.toLowerCase().includes(text.toLowerCase())
+      ? "block" : "none";
   });
 }
 
-/* ===== DOWNLOAD PDF ===== */
+/* ===== DOWNLOAD GENERATED PDF ===== */
 function downloadPDF(){
   html2pdf().set({
-    filename: currentTitle + ".pdf",
+    filename: currentTitle+".pdf",
     html2canvas:{scale:2,useCORS:true},
     jsPDF:{format:"a4",orientation:"portrait"}
   }).from(document.getElementById("pdfArea")).save();
