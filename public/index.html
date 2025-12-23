@@ -1,251 +1,183 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>KCSE & Courses PDF Library</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
+<title>Lyrics</title>
+
+<!-- PDF LIBRARY -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
+:root {
+  --accent: #f2c94c;
+  --bg: #f2f4f8;
+  --text-dark: #222;
+  --header-bg: #003366;
+}
+
 body{
   margin:0;
-  font-family:Georgia, serif;
-  background:#f4f4f4;
+  background: var(--bg);
+  font-family: Georgia, serif;
+  color: var(--text-dark);
 }
 
-.page{
-  max-width:1100px;
-  margin:auto;
-  padding:25px;
+/* HEADER */
+.header{
+  position: relative;
+  max-width: 900px;
+  margin: 30px auto;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+  padding: 30px;
 }
 
-h1{margin-top:0}
+.logo{
+  position:absolute;
+  top:20px;
+  right:20px;
+  width:60px;
+  border-radius:12px;
+}
 
-.search{
-  width:100%;
-  padding:12px;
-  font-size:16px;
+/* BACK */
+.back-link{
+  display:inline-block;
   margin-bottom:20px;
-}
-
-.title-link{
-  background:#fff;
-  padding:18px;
-  margin-bottom:14px;
-  font-size:20px;
+  color:#003366;
   font-weight:bold;
-  cursor:pointer;
-  border-left:6px solid #00b894;
-  box-shadow:0 2px 6px rgba(0,0,0,.08);
+  text-decoration:none;
 }
 
-.title-link:hover{
-  background:#f0fff8;
-}
-
-.title-link.active{
-  border-left-color:#0984e3;
-}
-
-.download-btn{
-  display:none;
-  background:#00b894;
-  color:white;
-  border:none;
-  padding:14px 22px;
-  font-size:15px;
-  cursor:pointer;
-  margin:25px 0;
-}
-
-#pdfArea{
-  display:none;
-  background:white;
-  padding:30px;
-  max-width:210mm;
-  margin:auto;
-  position:relative;
-}
-
-#pdfArea::before{
-  content:"";
-  position:fixed;
-  inset:0;
-  background:url("peron.png") repeat;
-  background-size:180px;
-  opacity:.05;
-  transform:rotate(-25deg);
-}
-
-.watermark{
-  position:fixed;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%) rotate(-30deg);
-  font-size:46px;
-  font-weight:bold;
-  color:rgba(0,0,0,.08);
-  pointer-events:none;
-}
-
-.content{position:relative;z-index:2}
-
-.pdf-title{
+/* TITLE */
+.song-title{
+  text-align:center;
   font-size:32px;
   font-weight:bold;
-  text-align:center;
-  margin-bottom:30px;
-  border-bottom:3px solid #000;
-  padding-bottom:12px;
+  color:#003366;
+  cursor:pointer;
+}
+.song-title:hover{
+  text-decoration: underline;
 }
 
-.question{
-  margin-bottom:25px;
-  page-break-inside:avoid;
+/* BUTTON */
+.pdf-btn{
+  display:block;
+  margin:20px auto;
+  padding:12px 20px;
+  font-size:16px;
+  font-weight:bold;
+  background:#003366;
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+.pdf-btn:hover{
+  background:#002244;
 }
 
-.diagram img{
-  max-width:100%;
-  margin-top:10px;
-  border:1px solid #ccc;
+/* IMAGE */
+.song-image{
+  width:100%;
+  max-height:400px;
+  object-fit:cover;
+  border-radius:12px;
+  margin:20px 0;
+}
+
+/* LYRICS */
+.lyrics{
+  white-space:pre-wrap;
+  line-height:1.7;
+  font-size:18px;
+}
+
+/* VIDEO */
+.video-box iframe{
+  width:100%;
+  height:360px;
+  border-radius:12px;
+  margin-top:30px;
+}
+
+/* PDF MODE */
+.pdf-mode iframe{
+  display:none;
 }
 </style>
 </head>
 
 <body>
 
-<div class="page">
+<div class="header" id="pdfContent">
+  <img src="cross.png" class="logo">
 
-<h1>Available KCSE Papers & Courses</h1>
+  <a class="back-link" href="lyrics.html">← Back to All Lyrics</a>
 
-<input class="search" placeholder="Search papers or courses..." onkeyup="filterTitles(this.value)">
+  <h1 class="song-title" id="title" onclick="generatePDF()"></h1>
 
-<div id="titleList"></div>
+  <button class="pdf-btn" onclick="generatePDF()">⬇ Download PDF</button>
 
-<button class="download-btn" id="downloadBtn">Download PDF</button>
+  <img id="image" class="song-image">
 
-<div id="pdfArea">
-  <div class="watermark">www.perontips.co.ke</div>
-  <div class="content">
-    <div class="pdf-title" id="pdfTitle"></div>
-    <div id="questions"></div>
-  </div>
-</div>
+  <div class="lyrics" id="lyrics"></div>
 
+  <div class="video-box" id="video"></div>
 </div>
 
 <script>
-/* ===== CONFIG ===== */
-const INDEX_CSV =
-"https://docs.google.com/spreadsheets/d/e/2PACX-1vRO8naTtvq63fZm0cNQdzwl6R5KL6UQD06EHcwiGemkvvJ4JhdK_M6wtoQPQZQDFiIyQJ894pzNpNVj/pub?output=csv";
+const params = new URLSearchParams(window.location.search);
+const id = params.get("id");
 
-let currentTitle = "";
-let currentPDFLink = "";
+/* ✅ NEW GOOGLE SHEET */
+const sheetURL =
+"https://docs.google.com/spreadsheets/d/1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs/gviz/tq?tqx=out:json";
 
-/* ===== LOAD TITLES ===== */
-async function loadTitles(){
-  const res = await fetch(INDEX_CSV);
-  const text = await res.text();
-  const rows = text.trim().split("\n");
+fetch(sheetURL)
+  .then(res => res.text())
+  .then(data => {
+    const json = JSON.parse(data.substring(47, data.length - 2));
+    const row = json.table.rows[id].c;
 
-  const list = document.getElementById("titleList");
-  list.innerHTML = "";
+    const title = row[0]?.v || "";
+    const lyrics = row[1]?.v || "";
+    const image = row[2]?.v || "";
+    const youtube = row[3]?.v || "";
 
-  rows.forEach(row=>{
-    if(!row) return;
+    document.getElementById("title").textContent = title;
+    document.getElementById("lyrics").textContent = lyrics;
+    document.getElementById("image").src = image;
 
-    const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    const title = cols[0]?.replace(/"/g,"").trim();
-    const link  = cols[1]?.replace(/"/g,"").trim();
+    if(youtube){
+      const ytId = youtube.includes("v=")
+        ? youtube.split("v=")[1]
+        : youtube.split(".be/")[1];
 
-    if(!title || !link) return;
-
-    const div = document.createElement("div");
-    div.className = "title-link";
-    div.textContent = title;
-
-    // PDF LINK
-    if(link.startsWith("http")){
-      div.onclick = ()=>{
-        currentTitle = title;
-        currentPDFLink = link;
-
-        document.getElementById("pdfArea").style.display = "none";
-        document.getElementById("downloadBtn").style.display = "inline-block";
-
-        window.open(link, "_blank");
-
-        document.getElementById("downloadBtn").onclick = ()=>{
-          window.open(link.replace("/view","/uc?export=download"), "_blank");
-        };
-      };
+      document.getElementById("video").innerHTML =
+        `<iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe>`;
     }
-    // SHEET CONTENT
-    else{
-      div.onclick = ()=>loadSheetPDF(link,title,div);
-    }
-
-    list.appendChild(div);
-  });
-}
-
-/* ===== LOAD QUESTIONS FROM SHEET ===== */
-async function loadSheetPDF(sheet,title,el){
-  document.querySelectorAll(".title-link").forEach(d=>d.classList.remove("active"));
-  el.classList.add("active");
-
-  document.getElementById("pdfArea").style.display="block";
-  document.getElementById("downloadBtn").style.display="inline-block";
-
-  currentTitle = title;
-  document.getElementById("pdfTitle").innerText = title;
-
-  const url =
-  `https://docs.google.com/spreadsheets/d/e/2PACX-1vRO8naTtvq63fZm0cNQdzwl6R5KL6UQD06EHcwiGemkvvJ4JhdK_M6wtoQPQZQDFiIyQJ894pzNpNVj/pub?output=csv&sheet=${sheet}`;
-
-  const csv = await fetch(url).then(r=>r.text());
-  const rows = csv.trim().split("\n");
-
-  const qDiv = document.getElementById("questions");
-  qDiv.innerHTML = "";
-
-  rows.forEach((row,i)=>{
-    const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    const q = cols[0]?.replace(/"/g,"").trim();
-    const img = cols[1]?.replace(/"/g,"").trim();
-    if(!q) return;
-
-    qDiv.innerHTML += `
-    <div class="question">
-      <strong>Question ${i+1}</strong><br>
-      ${q}
-      ${img?`<div class="diagram"><img src="${img}"></div>`:""}
-    </div>`;
   });
 
-  document.getElementById("downloadBtn").onclick = downloadGeneratedPDF;
-}
+/* PDF FUNCTION */
+function generatePDF(){
+  const element = document.getElementById("pdfContent");
+  element.classList.add("pdf-mode");
 
-/* ===== SEARCH ===== */
-function filterTitles(text){
-  document.querySelectorAll(".title-link").forEach(d=>{
-    d.style.display =
-      d.textContent.toLowerCase().includes(text.toLowerCase())
-      ? "block" : "none";
+  html2pdf().from(element).set({
+    margin: 10,
+    filename: document.getElementById("title").textContent + ".pdf",
+    image: { type: 'jpeg', quality: 0.98 },
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).save().then(()=>{
+    element.classList.remove("pdf-mode");
   });
 }
-
-/* ===== DOWNLOAD GENERATED PDF ===== */
-function downloadGeneratedPDF(){
-  html2pdf().set({
-    filename: currentTitle+".pdf",
-    html2canvas:{scale:2,useCORS:true},
-    jsPDF:{format:"a4",orientation:"portrait"}
-  }).from(document.getElementById("pdfArea")).save();
-}
-
-/* START */
-loadTitles();
 </script>
 
 </body>
