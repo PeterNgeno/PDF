@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KCSE & Courses PDF Library</title>
+
 <style>
 body {
   font-family: Georgia, serif;
@@ -25,12 +26,15 @@ ul {
 li {
   background: #fff;
   margin: 10px 0;
-  padding: 20px;
+  padding: 18px;
   font-size: 18px;
   border-left: 6px solid #00b894;
-  cursor: pointer;
   box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-  transition: 0.2s;
+}
+li a {
+  text-decoration: none;
+  color: #003366;
+  display: block;
 }
 li:hover {
   background: #e0f7fa;
@@ -44,32 +48,44 @@ li:hover {
 
 <script>
 const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
-const sheetNameIndex = "SheetIndex"; // Your master sheet listing all sheets
+const sheetsIndex = "Sheets"; // sheet that lists Sheet1, Sheet2, etc
 const ul = document.getElementById("exam-list");
 
-fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetNameIndex}`)
-.then(res => res.text())
-.then(data => {
-  const json = JSON.parse(data.substring(47, data.length-2));
-  const rows = json.table.rows || [];
+// Load list of sheet names
+fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetsIndex}`)
+  .then(res => res.text())
+  .then(text => {
+    const json = JSON.parse(text.substring(47, text.length - 2));
+    const sheetRows = json.table.rows || [];
 
-  rows.forEach((row, idx) => {
-    const sheetTab = row.c[0]?.v;
-    const title = row.c[1]?.v;
-    if (!sheetTab || !title) return; // skip empty rows
-
-    const li = document.createElement("li");
-    li.textContent = `${idx+1}. ${title}`;
-    li.addEventListener("click", () => {
-      window.location.href = `pdf-view.html?sheet=${sheetTab}&title=${encodeURIComponent(title)}`;
+    sheetRows.forEach(row => {
+      const sheetName = row.c[0]?.v;
+      if (sheetName) loadSheet(sheetName);
     });
-    ul.appendChild(li);
   });
-})
-.catch(err => {
-  console.error("Error loading sheet index:", err);
-  ul.innerHTML = "<li>Error loading sheets. Check SheetIndex.</li>";
-});
+
+function loadSheet(sheetName) {
+  fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`)
+    .then(res => res.text())
+    .then(text => {
+      const json = JSON.parse(text.substring(47, text.length - 2));
+      const rows = json.table.rows || [];
+
+      rows.forEach(r => {
+        const cell = r.c[0];
+        if (!cell) return;
+
+        const title = cell.v;
+        const link = cell.f?.match(/href="([^"]+)"/)?.[1];
+
+        if (!title || !link) return;
+
+        const li = document.createElement("li");
+        li.innerHTML = `<a href="${link}" target="_blank">${title}</a>`;
+        ul.appendChild(li);
+      });
+    });
+}
 </script>
 
 </body>
