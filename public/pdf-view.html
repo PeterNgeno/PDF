@@ -4,138 +4,45 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PDF Viewer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+body {font-family: Georgia, serif; background:#f4f4f4; margin:0; padding:20px;}
+#pdf-content {max-width:900px; margin:auto; background:#fff; padding:40px; border-radius:12px; box-shadow:0 5px 20px rgba(0,0,0,0.2);}
+h1 {text-align:center; color:#003366; font-size:36px; margin-bottom:40px;}
+.song {margin-bottom:50px; position:relative; page-break-after:always;}
+.song h2 {font-size:28px; color:#003366; text-align:center; margin-bottom:20px; border-bottom:2px solid #00b894; padding-bottom:5px;}
+.song h2 a {text-decoration:none; color:#003366;}
+.song img {width:100%; max-height:350px; object-fit:cover; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.15); margin-bottom:20px;}
+.song p {white-space:pre-wrap; line-height:1.7; font-size:18px; color:#222; margin-bottom:20px;}
+.song iframe {width:100%; height:360px; border-radius:12px; margin-bottom:20px; box-shadow:0 5px 15px rgba(0,0,0,0.15); border:0;}
+.watermark-text {position:absolute; top:10px; right:10px; font-size:18px; color:rgba(0,0,0,0.15);}
+.watermark-img {position:absolute; bottom:10px; right:10px; width:80px; opacity:0.1;}
+.download-btn {display:block; margin:30px auto; padding:15px 25px; background:#00b894; color:#fff; font-size:18px; border:none; border-radius:8px; cursor:pointer;}
+.download-btn:hover {background:#00976a;}
+.loader {text-align:center; color:#555; font-size:18px; margin:20px;}
+#toc {margin-bottom:40px; background:#f0f0f0; padding:20px; border-radius:12px; box-shadow:0 3px 10px rgba(0,0,0,0.1);}
+#toc h2 {margin-top:0; color:#003366;}
+#toc ul {list-style:none; padding:0; margin:0;}
+#toc li {margin:8px 0;}
+#toc a {text-decoration:none; color:#00b894; font-weight:bold;}
+#toc a:hover {color:#00976a;}
+</style>
+</head>
+<body>
+
+<div id="pdf-content">
+  <h1 id="pdf-title"></h1>
+  <div id="toc">
+    <h2>Table of Contents</h2>
+    <ul id="toc-list"></ul>
+  </div>
+</div>
+
+<div id="loader" class="loader">Loading content...</div>
+
+<button class="download-btn" id="downloadBtn">Download PDF</button>
+
 <script>
-const params = new URLSearchParams(window.location.search);
-const sheetName = params.get("sheet");
-
-if (!sheetName) {
-  document.getElementById("loader").textContent = "Invalid document.";
-  throw new Error("No sheet specified");
-}
-
-const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
-const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
-
-const contentDiv = document.getElementById("pdf-content");
-const loader = document.getElementById("loader");
-const tocList = document.getElementById("toc-list");
-const titleEl = document.getElementById("pdf-title");
-
-let allRows = [];
-let batch = 4;
-let currentIndex = 1; // start AFTER title row (A1)
-
-// Build section
-function createSection(row, index) {
-  const c = row.c;
-  const sectionTitle = c[0]?.v;
-  if (!sectionTitle) return null;
-
-  const text = c[1]?.v || "";
-  const image = c[2]?.v || "";
-  const youtube = c[3]?.v || "";
-  const source = c[4]?.v || "#";
-
-  const section = document.createElement("div");
-  section.className = "song";
-  section.id = `sec-${index}`;
-
-  // TOC
-  const tocLi = document.createElement("li");
-  tocLi.innerHTML = `<a href="#sec-${index}">${sectionTitle}</a>`;
-  tocList.appendChild(tocLi);
-
-  // Title
-  const h2 = document.createElement("h2");
-  const a = document.createElement("a");
-  a.textContent = sectionTitle;
-  a.href = source;
-  a.target = "_blank";
-  h2.appendChild(a);
-  section.appendChild(h2);
-
-  if (image) {
-    const img = document.createElement("img");
-    img.src = image;
-    section.appendChild(img);
-  }
-
-  if (text) {
-    const p = document.createElement("p");
-    p.textContent = text;
-    section.appendChild(p);
-  }
-
-  if (youtube) {
-    const id = youtube.includes("v=")
-      ? youtube.split("v=")[1].split("&")[0]
-      : youtube.split("be/")[1];
-    const iframe = document.createElement("iframe");
-    iframe.src = `https://www.youtube.com/embed/${id}`;
-    iframe.allowFullscreen = true;
-    section.appendChild(iframe);
-  }
-
-  section.innerHTML += `
-    <div class="watermark-text">www.perontips.co.ke</div>
-    <img src="peron.png" class="watermark-img">
-  `;
-
-  return section;
-}
-
-// Render sections in batches
-function renderBatch() {
-  const end = Math.min(currentIndex + batch, allRows.length);
-  for (let i = currentIndex; i < end; i++) {
-    const sec = createSection(allRows[i], i);
-    if (sec) contentDiv.appendChild(sec);
-  }
-  currentIndex = end;
-
-  if (currentIndex >= allRows.length) {
-    loader.style.display = "none";
-    window.removeEventListener("scroll", scrollHandler);
-  }
-}
-
-function scrollHandler() {
-  if (window.innerHeight + window.scrollY >= document.body.offsetHeight - 80) {
-    renderBatch();
-  }
-}
-
-// Fetch data
-fetch(sheetURL)
-  .then(res => res.text())
-  .then(text => {
-    const json = JSON.parse(text.substring(47, text.length - 2));
-    allRows = json.table.rows || [];
-
-    // A1 = PDF title
-    const pdfTitle = allRows[0]?.c?.[0]?.v || "Document";
-    titleEl.textContent = pdfTitle;
-    document.title = pdfTitle + " | perontips.co.ke";
-
-    renderBatch();
-    window.addEventListener("scroll", scrollHandler);
-  })
-  .catch(err => {
-    loader.textContent = "Failed to load document.";
-    console.error(err);
-  });
-
-// Download PDF
-document.getElementById("downloadBtn").addEventListener("click", () => {
-  html2pdf().set({
-    margin: 0.3,
-    filename: document.title + ".pdf",
-    image: { type: "jpeg", quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: "in", format: "a4", orientation: "portrait" }
-  }).from(contentDiv).save();
-});
-</script>
 const params = new URLSearchParams(window.location.search);
 const sheetName = params.get("sheet");
 const pdfTitle = params.get("title") || "Document";
