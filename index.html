@@ -2,96 +2,79 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>PDF Library</title>
+<title>KCSE & Courses PDF Library</title>
 
-<!-- PDF generator -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
 body {
   margin: 0;
   font-family: Georgia, serif;
-  background: #f2f2f2;
+  background: #f4f4f4;
 }
 
-/* ===== LAYOUT ===== */
-.container {
-  display: flex;
-  min-height: 100vh;
+/* ===== PAGE ===== */
+.page {
+  max-width: 1100px;
+  margin: auto;
+  padding: 25px;
 }
 
-/* ===== SIDEBAR ===== */
-.sidebar {
-  width: 340px;
-  background: #111;
-  color: #fff;
-  padding: 20px;
-  overflow-y: auto;
-}
-
-.sidebar h2 {
+/* ===== TITLES LIST ===== */
+h1 {
   margin-top: 0;
 }
 
 .search {
   width: 100%;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: none;
-  font-size: 14px;
+  padding: 12px;
+  font-size: 16px;
+  margin-bottom: 20px;
 }
 
 .title-link {
-  padding: 12px;
-  background: #222;
-  margin-bottom: 8px;
+  background: #fff;
+  padding: 18px;
+  margin-bottom: 14px;
+  font-size: 20px;
+  font-weight: bold;
   cursor: pointer;
-  border-left: 4px solid transparent;
+  border-left: 6px solid #00b894;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
 }
 
-.title-link:hover,
+.title-link:hover {
+  background: #f0fff8;
+}
+
 .title-link.active {
-  background: #333;
-  border-left: 4px solid #00b894;
+  border-left-color: #0984e3;
 }
 
-/* ===== MAIN ===== */
-.main {
-  flex: 1;
-  padding: 30px;
-  overflow-y: auto;
-}
-
+/* ===== BUTTON ===== */
 .download-btn {
+  display: none;
   background: #00b894;
   color: white;
   border: none;
-  padding: 12px 20px;
+  padding: 14px 22px;
+  font-size: 15px;
   cursor: pointer;
-  margin-bottom: 20px;
-  font-size: 14px;
+  margin: 25px 0;
 }
 
-.download-btn:disabled {
-  background: #888;
-  cursor: not-allowed;
-}
-
-/* ===== PDF AREA (HIDDEN INITIALLY) ===== */
+/* ===== PDF AREA ===== */
 #pdfArea {
   display: none;
-}
-
-.magazine {
   background: white;
+  padding: 30px;
   max-width: 210mm;
   margin: auto;
-  padding: 30px;
   position: relative;
 }
 
 /* IMAGE WATERMARK */
-.magazine::before {
+#pdfArea::before {
   content: "";
   position: fixed;
   inset: 0;
@@ -119,17 +102,15 @@ body {
   z-index: 2;
 }
 
-/* TITLE */
 .pdf-title {
   font-size: 32px;
   font-weight: bold;
   text-align: center;
   margin-bottom: 30px;
   border-bottom: 3px solid #000;
-  padding-bottom: 10px;
+  padding-bottom: 12px;
 }
 
-/* QUESTIONS */
 .question {
   margin-bottom: 25px;
   page-break-inside: avoid;
@@ -137,38 +118,34 @@ body {
 
 .diagram img {
   max-width: 100%;
-  border: 1px solid #ccc;
   margin-top: 10px;
+  border: 1px solid #ccc;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="page">
 
-  <!-- SIDEBAR -->
-  <div class="sidebar">
-    <h2>Available PDFs</h2>
-    <input type="text" class="search" placeholder="Search..." onkeyup="filterTitles(this.value)">
-    <div id="titleList"></div>
+<h1>Available KCSE Papers & Courses</h1>
+
+<input class="search" placeholder="Search papers or courses..." onkeyup="filterTitles(this.value)">
+
+<div id="titleList"></div>
+
+<button class="download-btn" id="downloadBtn" onclick="downloadPDF()">
+  Download PDF
+</button>
+
+<div id="pdfArea">
+  <div class="watermark">www.perontips.co.ke</div>
+
+  <div class="content">
+    <div class="pdf-title" id="pdfTitle"></div>
+    <div id="questions"></div>
   </div>
-
-  <!-- MAIN -->
-  <div class="main">
-    <button class="download-btn" id="downloadBtn" onclick="downloadPDF()" disabled>
-      Download PDF
-    </button>
-
-    <div class="magazine" id="pdfArea">
-      <div class="watermark">www.perontips.co.ke</div>
-
-      <div class="content">
-        <div id="pdfTitle" class="pdf-title"></div>
-        <div id="questions"></div>
-      </div>
-    </div>
-  </div>
+</div>
 
 </div>
 
@@ -177,54 +154,50 @@ body {
 const SHEET_ID = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
 const INDEX_SHEET = "Index";
 
-let currentSheet = "";
 let currentTitle = "";
 
-/* ===== LOAD TITLES FROM INDEX ===== */
+/* ===== LOAD TITLES ===== */
 async function loadTitles() {
-  const list = document.getElementById("titleList");
-  list.innerHTML = "";
-
   const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${INDEX_SHEET}`;
   const csv = await fetch(url).then(r => r.text());
   const rows = csv.split("\n").slice(1);
 
+  const list = document.getElementById("titleList");
+  list.innerHTML = "";
+
   rows.forEach(row => {
     const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    const sheetName = cols[0]?.replace(/"/g, "").trim();
+    const sheet = cols[0]?.replace(/"/g, "").trim();
     const title = cols[1]?.replace(/"/g, "").trim();
 
-    if (!sheetName || !title) return;
+    if (!sheet || !title) return;
 
     const div = document.createElement("div");
     div.className = "title-link";
-    div.innerText = title;
+    div.textContent = title;
 
-    div.onclick = () => loadSheet(sheetName, title, div);
+    div.onclick = () => loadPDF(sheet, title, div);
     list.appendChild(div);
   });
 }
 
-/* ===== LOAD CONTENT ONLY WHEN TITLE CLICKED ===== */
-async function loadSheet(sheetName, title, el) {
+/* ===== LOAD PDF CONTENT ===== */
+async function loadPDF(sheet, title, el) {
   document.querySelectorAll(".title-link").forEach(d => d.classList.remove("active"));
   el.classList.add("active");
 
-  currentSheet = sheetName;
-  currentTitle = title;
-
-  // Show PDF area and enable download
   document.getElementById("pdfArea").style.display = "block";
-  document.getElementById("downloadBtn").disabled = false;
+  document.getElementById("downloadBtn").style.display = "inline-block";
 
+  currentTitle = title;
   document.getElementById("pdfTitle").innerText = title;
 
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheet}`;
   const csv = await fetch(url).then(r => r.text());
   const rows = csv.split("\n").slice(1);
 
-  const container = document.getElementById("questions");
-  container.innerHTML = "";
+  const qDiv = document.getElementById("questions");
+  qDiv.innerHTML = "";
 
   rows.forEach((row, i) => {
     const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
@@ -233,7 +206,7 @@ async function loadSheet(sheetName, title, el) {
 
     if (!q) return;
 
-    container.innerHTML += `
+    qDiv.innerHTML += `
       <div class="question">
         <strong>Question ${i + 1}</strong><br>
         ${q}
@@ -246,15 +219,13 @@ async function loadSheet(sheetName, title, el) {
 /* ===== SEARCH ===== */
 function filterTitles(text) {
   document.querySelectorAll(".title-link").forEach(d => {
-    d.style.display = d.innerText.toLowerCase().includes(text.toLowerCase())
+    d.style.display = d.textContent.toLowerCase().includes(text.toLowerCase())
       ? "block" : "none";
   });
 }
 
-/* ===== DOWNLOAD PDF ===== */
+/* ===== DOWNLOAD ===== */
 function downloadPDF() {
-  if (!currentSheet) return;
-
   html2pdf().set({
     filename: currentTitle + ".pdf",
     html2canvas: { scale: 2, useCORS: true },
@@ -262,7 +233,6 @@ function downloadPDF() {
   }).from(document.getElementById("pdfArea")).save();
 }
 
-/* START */
 loadTitles();
 </script>
 
