@@ -23,7 +23,7 @@ body{
 /* CONTAINER */
 .header{
   max-width:900px;
-  margin:30px auto;
+  margin:30px auto 90px auto;
   background:#fff;
   border-radius:12px;
   box-shadow:0 5px 15px rgba(0,0,0,.15);
@@ -63,20 +63,6 @@ body{
   text-decoration:underline;
 }
 
-/* DOWNLOAD BUTTON */
-.pdf-btn{
-  display:block;
-  margin:20px auto;
-  padding:12px 20px;
-  font-size:16px;
-  font-weight:bold;
-  background:#003366;
-  color:#fff;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
-
 /* IMAGE */
 .song-image{
   width:100%;
@@ -109,15 +95,32 @@ body{
   transform:translate(-50%,-50%) rotate(-25deg);
   font-size:36px;
   color:rgba(0,0,0,0.08);
-  z-index:0;
   pointer-events:none;
+  z-index:0;
 }
-
 .watermark img{
   width:120px;
   opacity:0.08;
   display:block;
   margin:auto;
+}
+
+/* BOTTOM PDF BUTTON */
+.pdf-btn{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  padding:14px 28px;
+  font-size:16px;
+  font-weight:bold;
+  background:#003366;
+  color:#fff;
+  border:none;
+  border-radius:10px;
+  cursor:pointer;
+  box-shadow:0 6px 15px rgba(0,0,0,.3);
+  z-index:999;
 }
 
 /* PDF MODE */
@@ -132,21 +135,19 @@ body{
 
 <body>
 
-<div class="header" id="pdfContent">
+<!-- WATERMARK -->
+<div class="watermark">
+  <img src="peron.png" alt="">
+  www.perontips.co.ke
+</div>
 
-  <!-- WATERMARK -->
-  <div class="watermark">
-    <img src="peron.png" alt="">
-    www.perontips.co.ke
-  </div>
+<div class="header" id="pdfContent">
 
   <img src="cross.png" class="logo">
 
   <a class="back-link pdf-hide" href="lyrics.html">← Back to All Lyrics</a>
 
   <h1 class="song-title" id="title"></h1>
-
-  <button class="pdf-btn pdf-hide" onclick="generatePDF()">⬇ Download PDF</button>
 
   <img id="image" class="song-image">
 
@@ -155,6 +156,9 @@ body{
   <div class="video-box" id="video"></div>
 
 </div>
+
+<!-- BOTTOM BUTTON (NOT IN PDF) -->
+<button class="pdf-btn pdf-hide" onclick="generatePDF()">⬇ Download PDF</button>
 
 <script>
 const params = new URLSearchParams(window.location.search);
@@ -196,7 +200,7 @@ function generatePDF(){
 
   html2pdf().from(el).set({
     margin:10,
-    filename: document.title + ".pdf",
+    filename: document.getElementById("title").innerText + ".pdf",
     image:{type:'jpeg',quality:0.98},
     html2canvas:{scale:2},
     jsPDF:{unit:'mm',format:'a4',orientation:'portrait'}
