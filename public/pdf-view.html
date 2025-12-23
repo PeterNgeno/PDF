@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PDF Viewer</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<style>
+body {font-family: Georgia, serif; background:#f4f4f4; margin:0; padding:20px;}
+#pdf-content {max-width:900px; margin:auto; background:#fff; padding:25px; border-radius:12px;}
+h1 {text-align:center; color:#003366;}
+.song {margin-bottom:30px; page-break-after:always;}
+.song img {width:100%; max-height:300px; object-fit:cover; border-radius:12px;}
+.song video, .song iframe {width:100%; height:360px; border-radius:12px; margin-top:10px;}
+.download-btn {display:block; margin:30px auto; padding:15px 25px; background:#00b894; color:#fff; font-size:18px; border:none; border-radius:8px; cursor:pointer;}
+.download-btn:hover {background:#00976a;}
+.watermark {position:absolute; top:10px; right:10px; font-size:18px; color:rgba(0,0,0,0.2);}
+</style>
+</head>
+<body>
+
+<div id="pdf-content"></div>
+<button class="download-btn" id="downloadBtn">Download PDF</button>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const sheetName = params.get("sheet");
+const pdfTitle = params.get("title") || "Document";
+
+const sheetURL = `https://docs.google.com/spreadsheets/d/1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+const contentDiv = document.getElementById("pdf-content");
+
+fetch(sheetURL)
+.then(res=>res.text())
+.then(data=>{
+  const json = JSON.parse(data.substring(47,data.length-2));
+  json.table.rows.forEach((row,i)=>{
+    const cells = row.c;
+    const title = cells[0]?.v || "";
+    const lyrics = cells[1]?.v || "";
+    const image = cells[2]?.v || "";
+    const youtube = cells[3]?.v || "";
+
+    const songDiv = document.createElement("div");
+    songDiv.className = "song";
+
+    // Title (as clickable link inside pdf)
+    const h2 = document.createElement("h2");
+    h2.innerHTML = `<a href="#">${title}</a>`;
+    songDiv.appendChild(h2);
+
+    // Image
+    if(image) {
+      const img = document.createElement("img");
+      img.src = image;
+      songDiv.appendChild(img);
+    }
+
+    // Lyrics
+    if(lyrics) {
+      const p = document.createElement("p");
+      p.textContent = lyrics;
+      p.style.whiteSpace = "pre-wrap";
+      songDiv.appendChild(p);
+    }
+
+    // Video
+    if(youtube){
+      const ytId = youtube.includes("v=") ? youtube.split("v=")[1] : youtube.split(".be/")[1];
+      const iframe = document.createElement("iframe");
+      iframe.src = `https://www.youtube.com/embed/${ytId}`;
+      iframe.allowFullscreen = true;
+      songDiv.appendChild(iframe);
+    }
+
+    // Watermark image
+    const watermarkImg = document.createElement("img");
+    watermarkImg.src = "peron.png";
+    watermarkImg.style.position = "absolute";
+    watermarkImg.style.bottom="10px";
+    watermarkImg.style.right="10px";
+    watermarkImg.style.width="80px";
+    watermarkImg.style.opacity="0.1";
+    songDiv.appendChild(watermarkImg);
+
+    // Text watermark
+    const wmText = document.createElement("div");
+    wmText.className="watermark";
+    wmText.textContent="www.perontips.co.ke";
+    songDiv.appendChild(wmText);
+
+    contentDiv.appendChild(songDiv);
+  });
+});
+
+// Download button
+document.getElementById("downloadBtn").addEventListener("click",()=>{
+  const opt = {
+    margin:0.3,
+    filename: pdfTitle+".pdf",
+    image:{type:'jpeg', quality:0.98},
+    html2canvas:{scale:2},
+    jsPDF:{unit:'in', format:'a4', orientation:'portrait'}
+  };
+  html2pdf().set(opt).from(contentDiv).save();
+});
+</script>
+
+</body>
+</html>
