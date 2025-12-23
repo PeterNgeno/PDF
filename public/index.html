@@ -45,11 +45,13 @@ const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
 const ul = document.getElementById("exam-list");
 
 async function loadSheets() {
-  for(let i=1; i<=1000; i++){
+  let i = 1;
+  while(true) {
     const sheetName = `Sheet${i}`;
     const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
     try {
       const res = await fetch(sheetURL);
+      if(!res.ok) break; // stop if sheet does not exist
       const text = await res.text();
       const json = JSON.parse(text.substring(47,text.length-2));
       const firstRow = json.table.rows[0]?.c || [];
@@ -63,10 +65,15 @@ async function loadSheets() {
           window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
         });
         ul.appendChild(li);
+      } else {
+        // If first row is empty, assume sheet is not yet used, stop loop
+        break;
       }
 
+      i++;
     } catch(e) {
-      console.log(`Sheet ${sheetName} not found or empty.`);
+      // If fetch fails (sheet does not exist), stop loop
+      break;
     }
   }
 }
