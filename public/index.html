@@ -5,46 +5,72 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KCSE & Courses PDF Library</title>
 <style>
-body { font-family: Georgia, serif; background:#f4f4f4; margin:0; padding:20px; }
-h1 { text-align:center; color:#003366; }
-ul { max-width:800px; margin:auto; padding:0; list-style:none; }
-li { background:#fff; margin:10px 0; padding:15px 20px; font-size:18px;
-     border-left:6px solid #00b894; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.1); transition:0.2s; }
-li:hover { background:#e0f7fa; }
+body {
+  font-family: Georgia, serif;
+  background: #f4f4f4;
+  margin: 0;
+  padding: 20px;
+}
+h1 {
+  text-align: center;
+  color: #003366;
+  margin-bottom: 30px;
+}
+ul {
+  max-width: 900px;
+  margin: auto;
+  padding: 0;
+  list-style: none;
+}
+li {
+  background: #fff;
+  margin: 10px 0;
+  padding: 20px;
+  font-size: 18px;
+  border-left: 6px solid #00b894;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  transition: 0.2s;
+}
+li:hover {
+  background: #e0f7fa;
+}
 </style>
 </head>
 <body>
+
 <h1>KCSE & Courses PDF Library</h1>
 <ul id="exam-list"></ul>
 
 <script>
 const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
-const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=SheetIndex`;
+const sheetNameIndex = "SheetIndex"; // Your master sheet listing all sheets
 const ul = document.getElementById("exam-list");
 
-fetch(sheetURL)
-  .then(res => res.text())
-  .then(data => {
-    const json = JSON.parse(data.substring(47, data.length-2));
-    const rows = json.table.rows || [];
+fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetNameIndex}`)
+.then(res => res.text())
+.then(data => {
+  const json = JSON.parse(data.substring(47, data.length-2));
+  const rows = json.table.rows || [];
 
-    rows.forEach((row, idx) => {
-      const sheetName = row.c[0]?.v;
-      const title = row.c[1]?.v;
-      if (!sheetName || !title) return;
+  rows.forEach((row, idx) => {
+    const sheetTab = row.c[0]?.v;
+    const title = row.c[1]?.v;
+    if (!sheetTab || !title) return; // skip empty rows
 
-      const li = document.createElement("li");
-      li.textContent = `${idx+1}. ${title}`;
-      li.addEventListener("click", () => {
-        window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
-      });
-      ul.appendChild(li);
+    const li = document.createElement("li");
+    li.textContent = `${idx+1}. ${title}`;
+    li.addEventListener("click", () => {
+      window.location.href = `pdf-view.html?sheet=${sheetTab}&title=${encodeURIComponent(title)}`;
     });
-  })
-  .catch(err => {
-    ul.innerHTML = "<li>Error loading sheets</li>";
-    console.error(err);
+    ul.appendChild(li);
   });
+})
+.catch(err => {
+  console.error("Error loading sheet index:", err);
+  ul.innerHTML = "<li>Error loading sheets. Check SheetIndex.</li>";
+});
 </script>
+
 </body>
 </html>
