@@ -60,25 +60,32 @@ fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:j
 
     sheets.forEach(row => {
       const sheetName = row.c[0]?.v;
-      if (sheetName) loadSheetTitle(sheetName);
+      if (sheetName) fetchSheetTitle(sheetName);
     });
+  })
+  .catch(err => {
+    console.error("Error loading Sheets index", err);
   });
 
-function loadSheetTitle(sheetName) {
-  fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}&range=A1`)
+function fetchSheetTitle(sheetName) {
+  fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`)
     .then(res => res.text())
     .then(text => {
       const json = JSON.parse(text.substring(47, text.length - 2));
-      const cell = json.table.rows?.[0]?.c?.[0]?.v;
-      if (!cell) return;
+      const title = json.table.rows?.[0]?.c?.[0]?.v;
+
+      if (!title) return;
 
       const li = document.createElement("li");
       li.innerHTML = `
         <a href="pdf-view.html?sheet=${encodeURIComponent(sheetName)}">
-          ${cell}
+          ${title}
         </a>
       `;
       ul.appendChild(li);
+    })
+    .catch(err => {
+      console.error("Error loading sheet:", sheetName, err);
     });
 }
 </script>
