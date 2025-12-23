@@ -143,8 +143,7 @@ h1 {
 
 <script>
 /* ===== CONFIG ===== */
-
-// ✅ Your published CSV link for the Index sheet
+// Your published CSV link for the Index sheet
 const INDEX_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRO8naTtvq63fZm0cNQdzwl6R5KL6UQD06EHcwiGemkvvJ4JhdK_M6wtoQPQZQDFiIyQJ894pzNpNVj/pub?output=csv";
 
 let currentTitle = "";
@@ -152,15 +151,16 @@ let currentTitle = "";
 /* ===== LOAD TITLES FROM INDEX ===== */
 async function loadTitles() {
   const csv = await fetch(INDEX_CSV).then(r => r.text());
-  const rows = csv.split("\n").slice(1);
+  const rows = csv.trim().split("\n"); // Do not slice(1) to ensure first row is read
   const list = document.getElementById("titleList");
   list.innerHTML = "";
 
-  rows.forEach(row => {
+  rows.forEach((row, index) => {
+    if (!row) return;
     const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
     const sheetName = cols[0]?.replace(/"/g,"").trim();
     const title = cols[1]?.replace(/"/g,"").trim();
-    const sheetCSV = cols[2]?.replace(/"/g,"").trim(); // optional: per-sheet published CSV link
+    const sheetCSV = cols[2]?.replace(/"/g,"").trim(); // Optional: per-sheet published CSV link
 
     if(!sheetName || !title) return;
 
@@ -186,19 +186,20 @@ async function loadPDF(sheetCSVorName, title, el) {
 
   let url;
   if(sheetCSVorName.startsWith("http")) {
-    url = sheetCSVorName;
+    url = sheetCSVorName; // use published CSV link
   } else {
-    // fallback: convert sheetName to CSV export link
-    url = `https://docs.google.com/spreadsheets/d/${sheetCSVorName}/gviz/tq?tqx=out:csv&sheet=${sheetCSVorName}`;
+    // fallback: auto-generate CSV link from sheet name
+    url = `https://docs.google.com/spreadsheets/d/e/2PACX-1vRO8naTtvq63fZm0cNQdzwl6R5KL6UQD06EHcwiGemkvvJ4JhdK_M6wtoQPQZQDFiIyQJ894pzNpNVj/pub?output=csv&sheet=${sheetCSVorName}`;
   }
 
   const csv = await fetch(url).then(r=>r.text());
-  const rows = csv.split("\n").slice(1);
+  const rows = csv.trim().split("\n");
 
   const qDiv = document.getElementById("questions");
   qDiv.innerHTML = "";
 
   rows.forEach((row,i)=>{
+    if(!row) return;
     const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
     const q = cols[0]?.replace(/"/g,"").trim();
     const img = cols[1]?.replace(/"/g,"").trim();
