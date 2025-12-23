@@ -1,164 +1,43 @@
 <!doctype html>
-<html lang="en">
+<html>
 <head>
 <meta charset="utf-8">
+<title>Exam PDF Library</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>Lyrics</title>
-
-<!-- html2pdf -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
 <style>
-:root{
-  --bg:#f2f4f8;
-  --header:#003366;
-}
-
 body{
-  margin:0;
-  background:var(--bg);
-  font-family:Georgia, serif;
+  font-family:Georgia,serif;
+  background:#f4f4f4;
+  padding:20px;
 }
-
-/* CARD */
-.header{
-  max-width:900px;
-  margin:30px auto;
+.container{
+  max-width:800px;
+  margin:auto;
+}
+.item{
   background:#fff;
-  border-radius:12px;
-  box-shadow:0 5px 15px rgba(0,0,0,.15);
-  padding:30px;
-  position:relative;
-}
-
-/* LOGO */
-.logo{
-  position:absolute;
-  top:20px;
-  right:20px;
-  width:55px;
-  border-radius:10px;
-}
-
-/* TITLE */
-.song-title{
-  text-align:center;
-  font-size:32px;
-  color:var(--header);
+  padding:18px;
+  margin-bottom:12px;
+  font-size:22px;
+  font-weight:bold;
   cursor:pointer;
-  margin-bottom:20px;
+  border-left:6px solid #003366;
+  box-shadow:0 2px 6px rgba(0,0,0,.2);
 }
-.song-title:hover{
-  text-decoration:underline;
-}
-
-/* IMAGE */
-.song-image{
-  width:100%;
-  max-height:380px;
-  object-fit:cover;
-  border-radius:12px;
-  margin-bottom:20px;
-}
-
-/* LYRICS */
-.lyrics{
-  white-space:pre-wrap;
-  line-height:1.7;
-  font-size:18px;
-}
-
-/* VIDEO */
-.video-box{
-  margin-top:30px;
-}
-.video-box iframe{
-  width:100%;
-  height:360px;
-  border-radius:12px;
-  border:0;
-}
-
-/* DOWNLOAD BUTTON */
-.download-box{
-  margin-top:40px;
-  text-align:center;
-}
-.download-box button{
-  padding:14px 30px;
-  font-size:18px;
-  background:#003366;
-  color:#fff;
-  border:none;
-  border-radius:30px;
-  cursor:pointer;
-}
-.download-box button:hover{
-  opacity:.9;
-}
-
-/* PDF AREA */
-#pdfArea{
-  position:relative;
-}
-
-/* WATERMARK TEXT */
-.watermark-text{
-  position:absolute;
-  inset:0;
-  background:repeating-linear-gradient(
-    -45deg,
-    rgba(0,0,0,0.05),
-    rgba(0,0,0,0.05) 1px,
-    transparent 1px,
-    transparent 120px
-  );
-  pointer-events:none;
-}
-
-/* WATERMARK IMAGE */
-.watermark-image{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  opacity:0.08;
-  width:300px;
-  pointer-events:none;
+.item:hover{
+  background:#eaf2ff;
 }
 </style>
 </head>
 
 <body>
-
-<div class="header">
-
-<img src="cross.png" class="logo">
-
-<!-- PDF CONTENT -->
-<div id="pdfArea">
-
-  <div class="watermark-text"></div>
-  <img src="peron.png" class="watermark-image">
-
-  <h1 class="song-title" id="title"></h1>
-  <img id="image" class="song-image">
-  <div class="lyrics" id="lyrics"></div>
-  <div class="video-box" id="video"></div>
-
-</div>
-
-<!-- DOWNLOAD BUTTON (NOT IN PDF) -->
-<div class="download-box" id="noPdf">
-  <button onclick="downloadPDF()">⬇ Download PDF</button>
-</div>
-
+<div class="container">
+  <h1>Select Exam Type</h1>
+  <div id="list"></div>
 </div>
 
 <script>
-const id = new URLSearchParams(location.search).get("id") || 0;
-
 const sheetURL =
 "https://docs.google.com/spreadsheets/d/1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs/gviz/tq?tqx=out:json";
 
@@ -166,45 +45,19 @@ fetch(sheetURL)
 .then(res=>res.text())
 .then(data=>{
   const json=JSON.parse(data.substring(47,data.length-2));
-  const row=json.table.rows[id].c;
+  const rows=json.table.rows;
+  const list=document.getElementById("list");
 
-  const title=row[0]?.v||"";
-  const lyrics=row[1]?.v||"";
-  const image=row[2]?.v||"";
-  const youtube=row[3]?.v||"";
-
-  document.getElementById("title").textContent=title;
-  document.getElementById("lyrics").textContent=lyrics;
-  document.getElementById("image").src=image;
-
-  if(youtube){
-    const ytId=youtube.split("v=")[1]||youtube.split(".be/")[1];
-    document.getElementById("video").innerHTML=
-      `<iframe src="https://www.youtube.com/embed/${ytId}" allowfullscreen></iframe>`;
-  }
-
-  // TITLE CLICK → PDF
-  document.getElementById("title").onclick=downloadPDF;
-});
-
-function downloadPDF(){
-  document.getElementById("noPdf").style.display="none";
-
-  html2pdf()
-  .set({
-    margin:10,
-    filename:document.getElementById("title").textContent+".pdf",
-    image:{type:"jpeg",quality:0.98},
-    html2canvas:{scale:2},
-    jsPDF:{unit:"mm",format:"a4"}
-  })
-  .from(document.getElementById("pdfArea"))
-  .save()
-  .then(()=>{
-    document.getElementById("noPdf").style.display="block";
+  rows.forEach(r=>{
+    const name=r.c[0].v;
+    const sheet=r.c[1].v;
+    const div=document.createElement("div");
+    div.className="item";
+    div.textContent=name;
+    div.onclick=()=>location.href=`viewer.html?sheet=${sheet}`;
+    list.appendChild(div);
   });
-}
+});
 </script>
-
 </body>
 </html>
