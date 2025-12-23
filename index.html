@@ -13,14 +13,12 @@ body {
   background: #f4f4f4;
 }
 
-/* ===== PAGE ===== */
 .page {
   max-width: 1100px;
   margin: auto;
   padding: 25px;
 }
 
-/* ===== TITLES LIST ===== */
 h1 {
   margin-top: 0;
 }
@@ -51,7 +49,6 @@ h1 {
   border-left-color: #0984e3;
 }
 
-/* ===== BUTTON ===== */
 .download-btn {
   display: none;
   background: #00b894;
@@ -63,7 +60,6 @@ h1 {
   margin: 25px 0;
 }
 
-/* ===== PDF AREA ===== */
 #pdfArea {
   display: none;
   background: white;
@@ -73,7 +69,6 @@ h1 {
   position: relative;
 }
 
-/* IMAGE WATERMARK */
 #pdfArea::before {
   content: "";
   position: fixed;
@@ -84,7 +79,6 @@ h1 {
   transform: rotate(-25deg);
 }
 
-/* TEXT WATERMARK */
 .watermark {
   position: fixed;
   top: 50%;
@@ -96,7 +90,6 @@ h1 {
   pointer-events: none;
 }
 
-/* CONTENT */
 .content {
   position: relative;
   z-index: 2;
@@ -140,7 +133,6 @@ h1 {
 
 <div id="pdfArea">
   <div class="watermark">www.perontips.co.ke</div>
-
   <div class="content">
     <div class="pdf-title" id="pdfTitle"></div>
     <div id="questions"></div>
@@ -151,38 +143,38 @@ h1 {
 
 <script>
 /* ===== CONFIG ===== */
-const SHEET_ID = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
-const INDEX_SHEET = "Index";
+
+// Replace this with your published CSV link for the Index sheet
+const INDEX_CSV = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQY.../pub?output=csv";
 
 let currentTitle = "";
 
-/* ===== LOAD TITLES ===== */
+/* ===== LOAD TITLES FROM INDEX ===== */
 async function loadTitles() {
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${INDEX_SHEET}`;
-  const csv = await fetch(url).then(r => r.text());
+  const csv = await fetch(INDEX_CSV).then(r => r.text());
   const rows = csv.split("\n").slice(1);
-
   const list = document.getElementById("titleList");
   list.innerHTML = "";
 
   rows.forEach(row => {
     const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    const sheet = cols[0]?.replace(/"/g, "").trim();
-    const title = cols[1]?.replace(/"/g, "").trim();
+    const sheetName = cols[0]?.replace(/"/g,"").trim();
+    const title = cols[1]?.replace(/"/g,"").trim();
+    const sheetCSV = cols[2]?.replace(/"/g,"").trim(); // optional: per-sheet published CSV link
 
-    if (!sheet || !title) return;
+    if(!sheetName || !title) return;
 
     const div = document.createElement("div");
     div.className = "title-link";
     div.textContent = title;
 
-    div.onclick = () => loadPDF(sheet, title, div);
+    div.onclick = () => loadPDF(sheetCSV || sheetName, title, div);
     list.appendChild(div);
   });
 }
 
-/* ===== LOAD PDF CONTENT ===== */
-async function loadPDF(sheet, title, el) {
+/* ===== LOAD PDF CONTENT WHEN TITLE CLICKED ===== */
+async function loadPDF(sheetCSVorName, title, el) {
   document.querySelectorAll(".title-link").forEach(d => d.classList.remove("active"));
   el.classList.add("active");
 
@@ -192,47 +184,50 @@ async function loadPDF(sheet, title, el) {
   currentTitle = title;
   document.getElementById("pdfTitle").innerText = title;
 
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheet}`;
-  const csv = await fetch(url).then(r => r.text());
+  let url;
+  if(sheetCSVorName.startsWith("http")) {
+    url = sheetCSVorName;
+  } else {
+    // fallback: convert sheetName to CSV export link
+    url = `https://docs.google.com/spreadsheets/d/${sheetCSVorName}/gviz/tq?tqx=out:csv&sheet=${sheetCSVorName}`;
+  }
+
+  const csv = await fetch(url).then(r=>r.text());
   const rows = csv.split("\n").slice(1);
 
   const qDiv = document.getElementById("questions");
   qDiv.innerHTML = "";
 
-  rows.forEach((row, i) => {
+  rows.forEach((row,i)=>{
     const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    const q = cols[0]?.replace(/"/g, "").trim();
-    const img = cols[1]?.replace(/"/g, "").trim();
-
-    if (!q) return;
-
-    qDiv.innerHTML += `
-      <div class="question">
-        <strong>Question ${i + 1}</strong><br>
-        ${q}
-        ${img ? `<div class="diagram"><img src="${img}"></div>` : ""}
-      </div>
-    `;
+    const q = cols[0]?.replace(/"/g,"").trim();
+    const img = cols[1]?.replace(/"/g,"").trim();
+    if(!q) return;
+    qDiv.innerHTML += `<div class="question">
+      <strong>Question ${i+1}</strong><br>
+      ${q}
+      ${img ? `<div class="diagram"><img src="${img}"></div>` : ""}
+    </div>`;
   });
 }
 
 /* ===== SEARCH ===== */
-function filterTitles(text) {
-  document.querySelectorAll(".title-link").forEach(d => {
-    d.style.display = d.textContent.toLowerCase().includes(text.toLowerCase())
-      ? "block" : "none";
+function filterTitles(text){
+  document.querySelectorAll(".title-link").forEach(d=>{
+    d.style.display=d.textContent.toLowerCase().includes(text.toLowerCase())?"block":"none";
   });
 }
 
-/* ===== DOWNLOAD ===== */
-function downloadPDF() {
+/* ===== DOWNLOAD PDF ===== */
+function downloadPDF(){
   html2pdf().set({
     filename: currentTitle + ".pdf",
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { format: "a4", orientation: "portrait" }
+    html2canvas:{scale:2,useCORS:true},
+    jsPDF:{format:"a4",orientation:"portrait"}
   }).from(document.getElementById("pdfArea")).save();
 }
 
+/* START */
 loadTitles();
 </script>
 
