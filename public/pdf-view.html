@@ -107,7 +107,7 @@ h1 {
 
 <script>
 const params = new URLSearchParams(window.location.search);
-const sheetName = params.get("sheet");
+const sheetName = params.get("sheet");       // e.g., "Sheet1"
 const pdfTitle = params.get("title") || "Document";
 document.getElementById("pdf-title").textContent = pdfTitle;
 
@@ -130,13 +130,13 @@ fetch(sheetURL)
 
     rows.forEach((row) => {
       const cells = row.c || [];
-      const title = cells[0]?.v || "";
+      const title = cells[0]?.v;
       const lyrics = cells[1]?.v || "";
       const image = cells[2]?.v || "";
       const youtube = cells[3]?.v || "";
       const sourceLink = cells[4]?.v || "#";
 
-      if(!title) return; // skip rows without title
+      if(!title || title.trim() === "") return; // skip rows without title
 
       const songDiv = document.createElement("div");
       songDiv.className = "song";
