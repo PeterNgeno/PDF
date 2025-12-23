@@ -41,27 +41,39 @@ li:hover {
 <ul id="exam-list"></ul>
 
 <script>
-const sheetBaseURL = "https://docs.google.com/spreadsheets/d/1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs/gviz/tq?tqx=out:json";
+// Spreadsheet base URL
+const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
 
-// List of sheets (could be Sheet1, Sheet2 ... Sheet1000)
-const sheets = [
-  {name:"Physics Past Papers", tab:"Sheet1"},
-  {name:"Architectural Notes", tab:"Sheet2"},
-  {name:"Mathematics", tab:"Sheet3"},
-  // Add up to 1000 sheets here
-];
+// Fetch the spreadsheet metadata to get all sheets
+fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}?key=YOUR_API_KEY`)
+.then(res => res.json())
+.then(spreadsheet => {
+    const sheets = spreadsheet.sheets; // list of sheets
+    const ul = document.getElementById("exam-list");
 
-const ul = document.getElementById("exam-list");
+    sheets.forEach((sheet, idx) => {
+        const sheetName = sheet.properties.title;
 
-sheets.forEach((sheet, idx)=>{
-  const li = document.createElement("li");
-  li.textContent = `${idx+1}. ${sheet.name}`;
-  li.addEventListener("click",()=> {
-    // open pdf page
-    window.location.href = `pdf-view.html?sheet=${sheet.tab}&title=${encodeURIComponent(sheet.name)}`;
-  });
-  ul.appendChild(li);
-});
+        // Fetch the first row (title) from this sheet
+        const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+        fetch(sheetURL)
+        .then(res => res.text())
+        .then(data => {
+            const json = JSON.parse(data.substring(47, data.length-2));
+            const firstRow = json.table.rows[0]?.c || [];
+            const title = firstRow[0]?.v || sheetName;
+
+            const li = document.createElement("li");
+            li.textContent = `${idx+1}. ${title}`;
+            li.addEventListener("click", ()=> {
+                window.location.href = `pdf-view.html?sheet=${encodeURIComponent(sheetName)}&title=${encodeURIComponent(title)}`;
+            });
+            ul.appendChild(li);
+        });
+    });
+})
+.catch(err => console.error("Error fetching sheets:", err));
 </script>
+
 </body>
 </html>
