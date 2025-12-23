@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Exam & Course PDF Library</title>
+<title>PDF Library</title>
 
+<!-- PDF generator -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
@@ -21,27 +22,27 @@ body {
 
 /* ===== SIDEBAR ===== */
 .sidebar {
-  width: 320px;
+  width: 340px;
   background: #111;
-  color: white;
+  color: #fff;
   padding: 20px;
+  overflow-y: auto;
 }
 
 .sidebar h2 {
   margin-top: 0;
-  font-size: 18px;
 }
 
 .search {
   width: 100%;
-  padding: 8px;
+  padding: 10px;
   margin-bottom: 15px;
   border: none;
   font-size: 14px;
 }
 
 .title-link {
-  padding: 10px;
+  padding: 12px;
   background: #222;
   margin-bottom: 8px;
   cursor: pointer;
@@ -58,18 +59,20 @@ body {
 .main {
   flex: 1;
   padding: 30px;
+  overflow-y: auto;
 }
 
 .download-btn {
   background: #00b894;
   color: white;
   border: none;
-  padding: 10px 18px;
+  padding: 12px 20px;
   cursor: pointer;
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  font-size: 14px;
 }
 
-/* ===== PDF ===== */
+/* ===== PDF AREA ===== */
 .magazine {
   background: white;
   max-width: 210mm;
@@ -109,7 +112,7 @@ body {
 
 /* TITLE */
 .pdf-title {
-  font-size: 30px;
+  font-size: 32px;
   font-weight: bold;
   text-align: center;
   margin-bottom: 30px;
@@ -160,49 +163,48 @@ body {
 
 <script>
 /* ===== CONFIG ===== */
-
 const SHEET_ID = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
+const INDEX_SHEET = "Index";
 
-/* ADD NEW SHEETS HERE (UNLIMITED) */
-const SHEETS = [
-  "Sheet1",
-  "Sheet3",
-  "Sheet4"
-];
-
-let currentTitle = "";
 let currentSheet = "";
+let currentTitle = "";
 
-/* ===== LOAD TITLES ===== */
-
+/* ===== LOAD TITLES FROM INDEX ===== */
 async function loadTitles() {
   const list = document.getElementById("titleList");
+  list.innerHTML = "";
 
-  for (const sheet of SHEETS) {
-    const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheet}`;
-    const csv = await fetch(url).then(r => r.text());
-    const title = csv.split("\n")[0].split(",")[0].replace(/"/g, "");
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${INDEX_SHEET}`;
+  const csv = await fetch(url).then(r => r.text());
+  const rows = csv.split("\n").slice(1);
+
+  rows.forEach(row => {
+    const cols = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    const sheetName = cols[0]?.replace(/"/g, "").trim();
+    const title = cols[1]?.replace(/"/g, "").trim();
+
+    if (!sheetName || !title) return;
 
     const div = document.createElement("div");
     div.className = "title-link";
     div.innerText = title;
-    div.onclick = () => loadSheet(sheet, title, div);
+
+    div.onclick = () => loadSheet(sheetName, title, div);
     list.appendChild(div);
-  }
+  });
 }
 
-/* ===== LOAD SHEET ===== */
-
-async function loadSheet(sheet, title, el) {
+/* ===== LOAD CONTENT SHEET ===== */
+async function loadSheet(sheetName, title, el) {
   document.querySelectorAll(".title-link").forEach(d => d.classList.remove("active"));
   el.classList.add("active");
 
-  currentSheet = sheet;
+  currentSheet = sheetName;
   currentTitle = title;
 
   document.getElementById("pdfTitle").innerText = title;
 
-  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheet}`;
+  const url = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${sheetName}`;
   const csv = await fetch(url).then(r => r.text());
   const rows = csv.split("\n").slice(1);
 
@@ -227,7 +229,6 @@ async function loadSheet(sheet, title, el) {
 }
 
 /* ===== SEARCH ===== */
-
 function filterTitles(text) {
   document.querySelectorAll(".title-link").forEach(d => {
     d.style.display = d.innerText.toLowerCase().includes(text.toLowerCase())
@@ -235,11 +236,10 @@ function filterTitles(text) {
   });
 }
 
-/* ===== DOWNLOAD ===== */
-
+/* ===== DOWNLOAD PDF ===== */
 function downloadPDF() {
   if (!currentSheet) {
-    alert("Select a document first");
+    alert("Please select a document first");
     return;
   }
 
