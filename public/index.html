@@ -53,14 +53,17 @@ async function loadSheets() {
       const text = await res.text();
       const json = JSON.parse(text.substring(47,text.length-2));
       const firstRow = json.table.rows[0]?.c || [];
-      const title = firstRow[0]?.v || sheetName;
+      const title = firstRow[0]?.v;
 
-      const li = document.createElement("li");
-      li.textContent = `${i}. ${title}`;
-      li.addEventListener("click",()=> {
-        window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
-      });
-      ul.appendChild(li);
+      // Only add if title exists
+      if(title && title.trim() !== ""){
+        const li = document.createElement("li");
+        li.textContent = `${i}. ${title}`;
+        li.addEventListener("click",()=> {
+          window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
+        });
+        ul.appendChild(li);
+      }
 
     } catch(e) {
       console.log(`Sheet ${sheetName} not found or empty.`);
