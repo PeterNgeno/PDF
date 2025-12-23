@@ -1,0 +1,102 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>PDF Viewer</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<style>
+body{
+  margin:0;
+  background:#f2f4f8;
+  font-family:Georgia,serif;
+}
+.page{
+  max-width:900px;
+  margin:30px auto;
+  background:#fff;
+  padding:40px;
+  box-shadow:0 5px 15px rgba(0,0,0,.2);
+  position:relative;
+}
+.logo{
+  position:absolute;
+  top:20px;
+  right:20px;
+  width:70px;
+}
+h1{
+  text-align:center;
+  color:#003366;
+  cursor:pointer;
+}
+.content{
+  white-space:pre-wrap;
+  font-size:18px;
+  line-height:1.7;
+}
+.watermark{
+  position:fixed;
+  top:45%;
+  left:50%;
+  transform:translate(-50%,-50%) rotate(-30deg);
+  font-size:42px;
+  color:rgba(0,0,0,.08);
+  z-index:0;
+  pointer-events:none;
+}
+.download-btn{
+  margin:40px auto 10px;
+  display:block;
+  padding:14px 25px;
+  font-size:18px;
+  background:#003366;
+  color:white;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="watermark">www.perontips.co.ke</div>
+
+<div id="pdf" class="page">
+  <img src="peron.png" class="logo">
+  <h1 id="title"></h1>
+  <div class="content" id="content"></div>
+</div>
+
+<button class="download-btn" onclick="downloadPDF()">Download PDF</button>
+
+<script>
+const params=new URLSearchParams(location.search);
+const sheet=params.get("sheet");
+
+const sheetURL=`https://docs.google.com/spreadsheets/d/1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs/gviz/tq?tqx=out:json&sheet=${sheet}`;
+
+fetch(sheetURL)
+.then(res=>res.text())
+.then(data=>{
+  const json=JSON.parse(data.substring(47,data.length-2));
+  const row=json.table.rows[0].c;
+
+  document.getElementById("title").textContent=row[0].v;
+  document.getElementById("content").textContent=row[1].v;
+});
+
+function downloadPDF(){
+  const element=document.getElementById("pdf");
+  html2pdf().from(element).save();
+}
+
+// Title click → open PDF preview
+document.getElementById("title").onclick=downloadPDF;
+</script>
+
+</body>
+  </html>
