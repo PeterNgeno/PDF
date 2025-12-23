@@ -2,217 +2,48 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PDF Viewer</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KCSE & Courses PDF Library</title>
 <style>
-body {
-  font-family: Georgia, serif;
-  background:#f4f4f4;
-  margin:0;
-  padding:20px;
-}
-#pdf-content {
-  max-width:900px;
-  margin:auto;
-  background:#fff;
-  padding:40px;
-  border-radius:12px;
-  box-shadow:0 5px 20px rgba(0,0,0,0.2);
-  position:relative;
-}
-h1 {
-  text-align:center;
-  color:#003366;
-  font-size:36px;
-  margin-bottom:40px;
-}
-.song {
-  margin-bottom:50px;
-  page-break-after:always;
-  position:relative;
-}
-.song h2 {
-  font-size:28px;
-  color:#003366;
-  text-align:center;
-  margin-bottom:20px;
-  border-bottom:2px solid #00b894;
-  padding-bottom:5px;
-}
-.song h2 a {
-  text-decoration:none;
-  color:#003366;
-}
-.song img {
-  width:100%;
-  max-height:350px;
-  object-fit:cover;
-  border-radius:12px;
-  box-shadow:0 5px 15px rgba(0,0,0,0.15);
-  margin-bottom:20px;
-}
-.song p {
-  white-space:pre-wrap;
-  line-height:1.7;
-  font-size:18px;
-  color:#222;
-  margin-bottom:20px;
-}
-.song iframe {
-  width:100%;
-  height:360px;
-  border-radius:12px;
-  margin-bottom:20px;
-  box-shadow:0 5px 15px rgba(0,0,0,0.15);
-  border:0;
-}
-.watermark-text {
-  position:absolute;
-  top:10px;
-  right:10px;
-  font-size:18px;
-  color:rgba(0,0,0,0.15);
-  pointer-events:none;
-}
-.watermark-img {
-  position:absolute;
-  bottom:10px;
-  right:10px;
-  width:80px;
-  opacity:0.1;
-  pointer-events:none;
-}
-.download-btn {
-  display:block;
-  margin:30px auto;
-  padding:15px 25px;
-  background:#00b894;
-  color:#fff;
-  font-size:18px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
-.download-btn:hover {background:#00976a;}
+body { font-family: Georgia, serif; background: #f4f4f4; margin:0; padding:20px;}
+h1 { text-align:center; color:#003366;}
+ul { max-width:800px; margin:auto; padding:0; list-style:none;}
+li { background:#fff; margin:10px 0; padding:15px 20px; font-size:18px; border-left:6px solid #00b894; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.1); transition:0.2s;}
+li:hover { background:#e0f7fa;}
 </style>
 </head>
 <body>
-
-<div id="pdf-content">
-  <h1 id="pdf-title"></h1>
-</div>
-
-<button class="download-btn" id="downloadBtn">Download PDF</button>
+<h1>KCSE & Courses PDF Library</h1>
+<ul id="exam-list"></ul>
 
 <script>
-const params = new URLSearchParams(window.location.search);
-const sheetName = params.get("sheet");       // e.g., "Sheet1"
-const pdfTitle = params.get("title") || "Document";
-document.getElementById("pdf-title").textContent = pdfTitle;
-
 const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
-const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
-const contentDiv = document.getElementById("pdf-content");
+const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=SheetIndex`;
+const ul = document.getElementById("exam-list");
 
 fetch(sheetURL)
-  .then(res => res.text())
-  .then(data => {
-    const json = JSON.parse(data.substring(47, data.length-2));
-    const rows = json.table.rows || [];
+.then(res => res.text())
+.then(data => {
+  const json = JSON.parse(data.substring(47, data.length-2));
+  const rows = json.table.rows || [];
 
-    if(rows.length === 0){
-      const p = document.createElement("p");
-      p.textContent = "No content found in this sheet.";
-      contentDiv.appendChild(p);
-      return;
-    }
+  rows.forEach((row, idx) => {
+    const sheetName = row.c[0]?.v;
+    const title = row.c[1]?.v;
+    if(!sheetName || !title) return; // skip empty
 
-    rows.forEach((row) => {
-      const cells = row.c || [];
-      const title = cells[0]?.v;
-      const lyrics = cells[1]?.v || "";
-      const image = cells[2]?.v || "";
-      const youtube = cells[3]?.v || "";
-      const sourceLink = cells[4]?.v || "#";
-
-      if(!title || title.trim() === "") return; // skip rows without title
-
-      const songDiv = document.createElement("div");
-      songDiv.className = "song";
-
-      // Title as clickable link
-      const h2 = document.createElement("h2");
-      const a = document.createElement("a");
-      a.href = sourceLink || "#";
-      a.textContent = title;
-      a.target = "_blank";
-      h2.appendChild(a);
-      songDiv.appendChild(h2);
-
-      // Image
-      if(image){
-        const img = document.createElement("img");
-        img.src = image;
-        songDiv.appendChild(img);
-      }
-
-      // Lyrics
-      if(lyrics){
-        const p = document.createElement("p");
-        p.textContent = lyrics;
-        songDiv.appendChild(p);
-      }
-
-      // YouTube video
-      if(youtube){
-        let ytId = "";
-        if(youtube.includes("v=")){
-          ytId = youtube.split("v=")[1].split("&")[0];
-        } else if(youtube.includes("youtu.be/")){
-          ytId = youtube.split("youtu.be/")[1].split("?")[0];
-        }
-        if(ytId){
-          const iframe = document.createElement("iframe");
-          iframe.src = `https://www.youtube.com/embed/${ytId}`;
-          iframe.allowFullscreen = true;
-          songDiv.appendChild(iframe);
-        }
-      }
-
-      // Watermark text
-      const wmText = document.createElement("div");
-      wmText.className = "watermark-text";
-      wmText.textContent = "www.perontips.co.ke";
-      songDiv.appendChild(wmText);
-
-      // Watermark image
-      const wmImg = document.createElement("img");
-      wmImg.src = "peron.png";
-      wmImg.className = "watermark-img";
-      songDiv.appendChild(wmImg);
-
-      contentDiv.appendChild(songDiv);
+    const li = document.createElement("li");
+    li.textContent = `${idx+1}. ${title}`;
+    li.addEventListener("click", () => {
+      window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
     });
-  })
-  .catch(err => {
-    const p = document.createElement("p");
-    p.textContent = "Error loading sheet: " + err;
-    contentDiv.appendChild(p);
+    ul.appendChild(li);
   });
-
-// Download PDF
-document.getElementById("downloadBtn").addEventListener("click", () => {
-  const opt = {
-    margin:0.3,
-    filename: pdfTitle+".pdf",
-    image:{type:'jpeg', quality:0.98},
-    html2canvas:{scale:2},
-    jsPDF:{unit:'in', format:'a4', orientation:'portrait'}
-  };
-  html2pdf().set(opt).from(contentDiv).save();
+})
+.catch(err => {
+  ul.innerHTML = "<li>Error loading sheets</li>";
+  console.error(err);
 });
 </script>
-
 </body>
 </html>
