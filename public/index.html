@@ -4,91 +4,57 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KCSE & Courses PDF Library</title>
-
 <style>
-body {
-  font-family: Georgia, serif;
-  background: #f4f4f4;
-  margin: 0;
-  padding: 20px;
-}
-h1 {
-  text-align: center;
-  color: #003366;
-  margin-bottom: 30px;
-}
-ul {
-  max-width: 900px;
-  margin: auto;
-  padding: 0;
-  list-style: none;
-}
-li {
-  background: #fff;
-  margin: 12px 0;
-  padding: 20px;
-  font-size: 18px;
-  border-left: 6px solid #00b894;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-}
-li a {
-  text-decoration: none;
-  color: #003366;
-  display: block;
-}
-li:hover {
-  background: #e0f7fa;
-}
+body { font-family: Georgia, serif; background: #f4f4f4; margin:0; padding:20px; }
+h1 { text-align:center; color:#003366; }
+ul { max-width: 800px; margin:auto; padding:0; list-style:none; }
+li { background:#fff; margin:10px 0; padding:15px 20px; font-size:18px; border-left:6px solid #00b894; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.1); transition:0.2s; }
+li:hover { background:#e0f7fa; }
 </style>
 </head>
 <body>
-
 <h1>KCSE & Courses PDF Library</h1>
 <ul id="exam-list"></ul>
 
 <script>
 const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
-const sheetsIndex = "Sheets";
 const ul = document.getElementById("exam-list");
 
-// Load list of sheets
-fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetsIndex}`)
-  .then(res => res.text())
-  .then(text => {
-    const json = JSON.parse(text.substring(47, text.length - 2));
-    const sheets = json.table.rows || [];
+async function loadSheets() {
+  let i = 1;
+  while(true) {
+    const sheetName = `Sheet${i}`;
+    const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+    try {
+      const res = await fetch(sheetURL);
+      const text = await res.text();
+      const json = JSON.parse(text.substring(47,text.length-2));
+      
+      // Stop if no rows exist in the sheet
+      if(!json.table.rows || json.table.rows.length === 0) break;
 
-    sheets.forEach(row => {
-      const sheetName = row.c[0]?.v;
-      if (sheetName) fetchSheetTitle(sheetName);
-    });
-  })
-  .catch(err => {
-    console.error("Error loading Sheets index", err);
-  });
+      const firstRow = json.table.rows[0].c || [];
+      const title = firstRow[0]?.v;
 
-function fetchSheetTitle(sheetName) {
-  fetch(`https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`)
-    .then(res => res.text())
-    .then(text => {
-      const json = JSON.parse(text.substring(47, text.length - 2));
-      const title = json.table.rows?.[0]?.c?.[0]?.v;
-
-      if (!title) return;
+      // Only include sheet if title exists
+      if(!title || title.trim() === "") break;
 
       const li = document.createElement("li");
-      li.innerHTML = `
-        <a href="pdf-view.html?sheet=${encodeURIComponent(sheetName)}">
-          ${title}
-        </a>
-      `;
+      li.textContent = `${i}. ${title}`;
+      li.addEventListener("click",()=> {
+        window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
+      });
       ul.appendChild(li);
-    })
-    .catch(err => {
-      console.error("Error loading sheet:", sheetName, err);
-    });
-}
-</script>
 
+      i++;
+    } catch(e) {
+      console.log(`Sheet ${sheetName} not found or empty.`);
+      break; // stop loop on any error
+    }
+  }
+}
+
+loadSheets();
+</script>
 </body>
 </html>
