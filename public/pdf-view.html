@@ -9,7 +9,7 @@
 body {font-family: Georgia, serif; background:#f4f4f4; margin:0; padding:20px;}
 #pdf-content {max-width:900px; margin:auto; background:#fff; padding:40px; border-radius:12px; box-shadow:0 5px 20px rgba(0,0,0,0.2);}
 h1 {text-align:center; color:#003366; font-size:36px; margin-bottom:40px;}
-.song {margin-bottom:50px; position:relative; page-break-after:always;}
+.song {margin-bottom:50px; position:relative;}
 .song h2 {font-size:28px; color:#003366; text-align:center; margin-bottom:20px; border-bottom:2px solid #00b894; padding-bottom:5px;}
 .song h2 a {text-decoration:none; color:#003366;}
 .song img {width:100%; max-height:350px; object-fit:cover; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.15); margin-bottom:20px;}
@@ -19,26 +19,13 @@ h1 {text-align:center; color:#003366; font-size:36px; margin-bottom:40px;}
 .watermark-img {position:absolute; bottom:10px; right:10px; width:80px; opacity:0.1;}
 .download-btn {display:block; margin:30px auto; padding:15px 25px; background:#00b894; color:#fff; font-size:18px; border:none; border-radius:8px; cursor:pointer;}
 .download-btn:hover {background:#00976a;}
-.loader {text-align:center; color:#555; font-size:18px; margin:20px;}
-#toc {margin-bottom:40px; background:#f0f0f0; padding:20px; border-radius:12px; box-shadow:0 3px 10px rgba(0,0,0,0.1);}
-#toc h2 {margin-top:0; color:#003366;}
-#toc ul {list-style:none; padding:0; margin:0;}
-#toc li {margin:8px 0;}
-#toc a {text-decoration:none; color:#00b894; font-weight:bold;}
-#toc a:hover {color:#00976a;}
 </style>
 </head>
 <body>
 
 <div id="pdf-content">
-  <h1 id="pdf-title"></h1>
-  <div id="toc">
-    <h2>Table of Contents</h2>
-    <ul id="toc-list"></ul>
-  </div>
+<h1 id="pdf-title"></h1>
 </div>
-
-<div id="loader" class="loader">Loading content...</div>
 
 <button class="download-btn" id="downloadBtn">Download PDF</button>
 
@@ -50,34 +37,21 @@ document.getElementById("pdf-title").textContent = pdfTitle;
 
 const sheetURL = `https://docs.google.com/spreadsheets/d/1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs/gviz/tq?tqx=out:json&sheet=${sheetName}`;
 const contentDiv = document.getElementById("pdf-content");
-const loader = document.getElementById("loader");
-const tocList = document.getElementById("toc-list");
 
-let allRows = [];
-let batch = 5;  // rows per scroll
-let currentIndex = 0;
+fetch(sheetURL)
+.then(res => res.text())
+.then(data => {
+  const json = JSON.parse(data.substring(47,data.length-2));
+  const row = json.table.rows[0]?.c || [];
 
-// Create song element from row
-function createSong(row, index){
-  const cells = row.c;
-  const title = cells[0]?.v || "";
-  if (!title.trim()) return null;
-  const lyrics = cells[1]?.v || "";
-  const image = cells[2]?.v || "";
-  const youtube = cells[3]?.v || "";
-  const sourceLink = cells[4]?.v || "#";
+  const title = row[0]?.v || "";
+  const lyrics = row[1]?.v || "";
+  const image = row[2]?.v || "";
+  const youtube = row[3]?.v || "";
+  const sourceLink = row[4]?.v || "#";
 
   const songDiv = document.createElement("div");
   songDiv.className = "song";
-  songDiv.id = `song-${index}`;
-
-  // TOC link
-  const tocLi = document.createElement("li");
-  const tocA = document.createElement("a");
-  tocA.href = `#song-${index}`;
-  tocA.textContent = title;
-  tocLi.appendChild(tocA);
-  tocList.appendChild(tocLi);
 
   // Title as link
   const h2 = document.createElement("h2");
@@ -118,45 +92,10 @@ function createSong(row, index){
   wmImg.className = "watermark-img";
   songDiv.appendChild(wmImg);
 
-  return songDiv;
-}
-
-// Render batch
-function renderBatch(){
-  const end = Math.min(currentIndex + batch, allRows.length);
-  for(let i = currentIndex; i < end; i++){
-    const songDiv = createSong(allRows[i], i+1);
-    if(songDiv) contentDiv.appendChild(songDiv);
-  }
-  currentIndex = end;
-  if(currentIndex >= allRows.length){
-    loader.style.display = "none";
-    window.removeEventListener("scroll", scrollHandler);
-  }
-}
-
-// Scroll handler
-function scrollHandler(){
-  if(window.innerHeight + window.scrollY >= document.body.offsetHeight - 50){
-    renderBatch();
-  }
-}
-
-// Fetch sheet
-fetch(sheetURL)
-.then(res => res.text())
-.then(data => {
-  const json = JSON.parse(data.substring(47, data.length-2));
-  allRows = json.table.rows || [];
-  renderBatch();
-  window.addEventListener("scroll", scrollHandler);
-})
-.catch(err => {
-  loader.textContent = "Error loading content.";
-  console.error(err);
+  contentDiv.appendChild(songDiv);
 });
 
-// Download PDF
+// Download PDF button
 document.getElementById("downloadBtn").addEventListener("click", ()=>{
   html2pdf().set({
     margin:0.3,
