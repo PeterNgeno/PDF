@@ -56,13 +56,15 @@ async function loadPDFs() {
     const rows = json.table.rows;
 
     rows.forEach((row, index) => {
-      const title = row.c[0]?.v;
+      const title = row.c[0]?.v; // Column A
+      const notes = row.c[1]?.v; // Column B
+      const img = row.c[2]?.v;   // Column C
+
       if(title && title.trim() !== "") {
         const li = document.createElement("li");
         li.textContent = `${index+1}. ${title}`;
-        li.addEventListener("click", () => {
-          // Redirect to pdf-view with row and sheet info
-          const url = `pdf-view.html?sheet=${encodeURIComponent(sheetName)}&row=${index}`;
+        li.addEventListener("click", ()=> {
+          const url = `pdf-view.html?row=${index}&title=${encodeURIComponent(title)}&sheet=${sheetName}`;
           window.location.href = url;
         });
         ul.appendChild(li);
