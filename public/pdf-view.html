@@ -6,116 +6,20 @@
 <title>PDF Viewer</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
-body {
-  font-family: Georgia, serif;
-  background:#f4f4f4;
-  margin:0;
-  padding:20px;
-}
-#pdf-content {
-  max-width:900px;
-  margin:auto;
-  background:#fff;
-  padding:40px;
-  border-radius:12px;
-  box-shadow:0 5px 20px rgba(0,0,0,0.2);
-}
-h1 {
-  text-align:center;
-  color:#003366;
-  font-size:36px;
-  margin-bottom:40px;
-}
-/* Main PDF entry */
-.song {
-  margin-bottom:50px;
-  position:relative;
-  page-break-after:always;
-  padding:20px;
-  border-radius:12px;
-  background:#fefefe;
-  box-shadow:0 5px 15px rgba(0,0,0,0.1);
-}
-/* Main Title */
-.song h2 {
-  font-size:28px;
-  color:#fff;
-  text-align:center;
-  margin-bottom:20px;
-  padding:12px;
-  border-radius:8px;
-  background: linear-gradient(135deg,#003366,#00b894);
-}
-.song h2 a {
-  text-decoration:none;
-  color:#fff;
-}
-/* Mini Title inside notes */
-.song h3 {
-  font-family: Georgia, serif;
-  font-weight: bold;
-  background: linear-gradient(135deg,#e0f7fa,#00b894);
-  padding:8px 12px;
-  border-radius:6px;
-  color:#003366;
-  margin:20px 0 10px 0;
-}
-/* Notes/paragraph */
-.song p {
-  white-space:pre-wrap;
-  line-height:1.7;
-  font-size:18px;
-  color:#222;
-  margin-bottom:15px;
-}
-/* Image */
-.song img.content-img {
-  width:100%;
-  max-height:400px;
-  object-fit:cover;
-  border-radius:12px;
-  box-shadow:0 5px 15px rgba(0,0,0,0.15);
-  margin-bottom:20px;
-}
-/* Video */
-.song iframe {
-  width:100%;
-  height:360px;
-  border-radius:12px;
-  margin-bottom:20px;
-  box-shadow:0 5px 15px rgba(0,0,0,0.15);
-  border:0;
-}
-/* Watermark */
-.watermark-text {
-  position:absolute;
-  top:10px;
-  right:10px;
-  font-size:18px;
-  color:rgba(0,0,0,0.15);
-}
-.watermark-img {
-  position:absolute;
-  bottom:10px;
-  right:10px;
-  width:80px;
-  opacity:0.1;
-}
-/* Download button */
-.download-btn {
-  display:block;
-  margin:30px auto;
-  padding:15px 25px;
-  background:#00b894;
-  color:#fff;
-  font-size:18px;
-  border:none;
-  border-radius:8px;
-  cursor:pointer;
-}
-.download-btn:hover {
-  background:#00976a;
-}
+body {font-family: Georgia, serif; background:#f4f4f4; margin:0; padding:20px;}
+#pdf-content {max-width:900px; margin:auto; background:#fff; padding:40px; border-radius:12px; box-shadow:0 5px 20px rgba(0,0,0,0.2);}
+h1 {text-align:center; color:#003366; font-size:36px; margin-bottom:40px;}
+.song {margin-bottom:50px; position:relative; padding:20px; border-radius:12px; background:#fefefe; box-shadow:0 5px 15px rgba(0,0,0,0.1);}
+.song h2 {font-size:28px; color:#fff; text-align:center; margin-bottom:20px; padding:12px; border-radius:8px; background: linear-gradient(135deg,#003366,#00b894);}
+.song h2 a {text-decoration:none; color:#fff;}
+.song h3 {font-family: Georgia, serif; font-weight: bold; background: linear-gradient(135deg,#e0f7fa,#00b894); padding:8px 12px; border-radius:6px; color:#003366; margin:20px 0 10px 0;}
+.song p {white-space:pre-wrap; line-height:1.7; font-size:18px; color:#222; margin-bottom:15px;}
+.song img.content-img {width:100%; max-height:400px; object-fit:cover; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.15); margin-bottom:20px;}
+.song iframe {width:100%; height:360px; border-radius:12px; margin-bottom:20px; box-shadow:0 5px 15px rgba(0,0,0,0.15); border:0;}
+.watermark-text {position:absolute; top:10px; right:10px; font-size:18px; color:rgba(0,0,0,0.15);}
+.watermark-img {position:absolute; bottom:10px; right:10px; width:80px; opacity:0.1;}
+.download-btn {display:block; margin:30px auto; padding:15px 25px; background:#00b894; color:#fff; font-size:18px; border:none; border-radius:8px; cursor:pointer;}
+.download-btn:hover {background:#00976a;}
 </style>
 </head>
 <body>
@@ -129,10 +33,9 @@ h1 {
 <script>
 const params = new URLSearchParams(window.location.search);
 const sheetName = params.get("sheet");
-const pdfTitle = params.get("title") || "Document";
-document.getElementById("pdf-title").textContent = pdfTitle;
-
+const rowIndex = parseInt(params.get("row"));
 const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
+
 const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
 const contentDiv = document.getElementById("pdf-content");
 
@@ -140,83 +43,78 @@ fetch(sheetURL)
 .then(res=>res.text())
 .then(data=>{
   const json = JSON.parse(data.substring(47,data.length-2));
-  
-  json.table.rows.forEach((row,i)=>{
-    const cells = row.c;
-    const title = cells[0]?.v || "";
-    const notes = cells[1]?.v || "";
-    const image = cells[2]?.v || "";
-    const youtube = cells[3]?.v || "";
-    const sourceLink = cells[4]?.v || "#"; 
+  const row = json.table.rows[rowIndex]?.c;
+  if(!row) return;
 
-    if(!title) return; // Skip empty titles
+  const title = row[0]?.v || "Document";
+  const notes = row[1]?.v || "";
+  const image = row[2]?.v || "";
+  const youtube = row[3]?.v || "";
+  const sourceLink = row[4]?.v || "#"; 
 
-    const songDiv = document.createElement("div");
-    songDiv.className = "song";
+  document.getElementById("pdf-title").textContent = title;
 
-    // Title as link
-    const h2 = document.createElement("h2");
-    const a = document.createElement("a");
-    a.href = sourceLink || "#";
-    a.textContent = title;
-    a.target = "_blank";
-    h2.appendChild(a);
-    songDiv.appendChild(h2);
+  const songDiv = document.createElement("div");
+  songDiv.className = "song";
 
-    // Image
-    if(image){
-      const img = document.createElement("img");
-      img.src = image;
-      img.className = "content-img";
-      songDiv.appendChild(img);
-    }
+  const h2 = document.createElement("h2");
+  const a = document.createElement("a");
+  a.href = sourceLink;
+  a.textContent = title;
+  a.target="_blank";
+  h2.appendChild(a);
+  songDiv.appendChild(h2);
 
-    // Notes with mini titles
-    if(notes){
-      const lines = notes.split('\n');
-      lines.forEach(line => {
-        if(line.startsWith("##")){
-          const miniTitle = document.createElement("h3");
-          miniTitle.textContent = line.replace("##","").trim();
-          songDiv.appendChild(miniTitle);
-        } else {
-          const p = document.createElement("p");
-          p.textContent = line;
-          songDiv.appendChild(p);
-        }
-      });
-    }
+  if(image){
+    const img = document.createElement("img");
+    img.src = image;
+    img.className = "content-img";
+    songDiv.appendChild(img);
+  }
 
-    // Video
-    if(youtube){
-      const ytId = youtube.includes("v=") ? youtube.split("v=")[1] : youtube.split(".be/")[1];
-      const iframe = document.createElement("iframe");
-      iframe.src = `https://www.youtube.com/embed/${ytId}`;
-      iframe.allowFullscreen = true;
-      songDiv.appendChild(iframe);
-    }
+  // Notes with mini titles
+  if(notes){
+    const lines = notes.split('\n');
+    lines.forEach(line => {
+      if(line.startsWith("##")){
+        const miniTitle = document.createElement("h3");
+        miniTitle.textContent = line.replace("##","").trim();
+        songDiv.appendChild(miniTitle);
+      } else {
+        const p = document.createElement("p");
+        p.textContent = line;
+        songDiv.appendChild(p);
+      }
+    });
+  }
 
-    // Watermark text
-    const wmText = document.createElement("div");
-    wmText.className = "watermark-text";
-    wmText.textContent = "www.perontips.co.ke";
-    songDiv.appendChild(wmText);
+  if(youtube){
+    const ytId = youtube.includes("v=") ? youtube.split("v=")[1] : youtube.split(".be/")[1];
+    const iframe = document.createElement("iframe");
+    iframe.src = `https://www.youtube.com/embed/${ytId}`;
+    iframe.allowFullscreen = true;
+    songDiv.appendChild(iframe);
+  }
 
-    // Watermark image
-    const wmImg = document.createElement("img");
-    wmImg.src = "peron.png";
-    wmImg.className = "watermark-img";
-    songDiv.appendChild(wmImg);
+  // Watermarks
+  const wmText = document.createElement("div");
+  wmText.className = "watermark-text";
+  wmText.textContent = "www.perontips.co.ke";
+  songDiv.appendChild(wmText);
 
-    contentDiv.appendChild(songDiv);
-  });
+  const wmImg = document.createElement("img");
+  wmImg.src = "peron.png";
+  wmImg.className = "watermark-img";
+  songDiv.appendChild(wmImg);
+
+  contentDiv.appendChild(songDiv);
 });
 
 // Download PDF button
 document.getElementById("downloadBtn").addEventListener("click",()=>{
   const opt = {
     margin:0.3,
-    filename: pdfTitle+".pdf",
+    filename: "PDF.pdf",
     image:{type:'jpeg', quality:0.98},
     html2canvas:{scale:2},
     jsPDF:{unit:'in', format:'a4', orientation:'portrait'}
@@ -224,6 +122,5 @@ document.getElementById("downloadBtn").addEventListener("click",()=>{
   html2pdf().set(opt).from(contentDiv).save();
 });
 </script>
-
 </body>
 </html>
