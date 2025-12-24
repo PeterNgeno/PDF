@@ -23,14 +23,16 @@ body {
 }
 
 h1 {
+  display: inline-block;
   text-align:center; 
   color:#fff; 
   font-size:36px; 
   margin-bottom:20px;
   background: linear-gradient(135deg,#003366,#00b894);
-  padding:20px;
+  padding:20px 30px;
   border-radius:12px;
   box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  word-break: break-word; /* wrap long titles */
 }
 
 .separator {
@@ -137,7 +139,7 @@ fetch(sheetURL)
         return;
     }
 
-    // Only first row
+    // Only first row per PDF
     const row = json.table.rows[0].c || [];
     const lyrics = row[1]?.v || "";
     const image = row[2]?.v || "";
