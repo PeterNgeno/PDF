@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PDF Viewer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF Viewer with TOC</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
 body {font-family: Georgia, serif; background:#f4f4f4; margin:0; padding:20px;}
 #pdf-content {max-width:900px; margin:auto; background:#fff; padding:40px; border-radius:12px; box-shadow:0 5px 20px rgba(0,0,0,0.2);}
 h1 {text-align:center; color:#003366; font-size:36px; margin-bottom:40px;}
-.song {margin-bottom:50px; position:relative;}
+.song {margin-bottom:50px; position:relative; page-break-after:always;}
 .song h2 {font-size:28px; color:#003366; text-align:center; margin-bottom:20px; border-bottom:2px solid #00b894; padding-bottom:5px;}
 .song h2 a {text-decoration:none; color:#003366;}
 .song img {width:100%; max-height:350px; object-fit:cover; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.15); margin-bottom:20px;}
@@ -19,93 +19,119 @@ h1 {text-align:center; color:#003366; font-size:36px; margin-bottom:40px;}
 .watermark-img {position:absolute; bottom:10px; right:10px; width:80px; opacity:0.1;}
 .download-btn {display:block; margin:30px auto; padding:15px 25px; background:#00b894; color:#fff; font-size:18px; border:none; border-radius:8px; cursor:pointer;}
 .download-btn:hover {background:#00976a;}
+.toc {margin-bottom:50px;}
+.toc h2 {text-align:center; color:#003366; font-size:32px; margin-bottom:20px;}
+.toc ul {list-style:none; padding:0;}
+.toc li {margin:10px 0; font-size:20px;}
+.toc a {text-decoration:none; color:#003366;}
 </style>
 </head>
 <body>
 
 <div id="pdf-content">
-<h1 id="pdf-title"></h1>
+<h1>KCSE & Courses Library</h1>
+<div class="toc" id="toc"></div>
 </div>
 
 <button class="download-btn" id="downloadBtn">Download PDF</button>
 
 <script>
-const params = new URLSearchParams(window.location.search);
-const sheetName = params.get("sheet");
-const pdfTitle = params.get("title") || "Document";
-document.getElementById("pdf-title").textContent = pdfTitle;
+const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
+const pdfContent = document.getElementById("pdf-content");
+const tocDiv = document.getElementById("toc");
 
-const sheetURL = `https://docs.google.com/spreadsheets/d/1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs/gviz/tq?tqx=out:json&sheet=${sheetName}`;
-const contentDiv = document.getElementById("pdf-content");
+async function loadSheets() {
+    let tocList = document.createElement("ul");
+    let i = 1;
+    while(true){
+        const sheetName = `Sheet${i}`;
+        const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+        try{
+            const res = await fetch(sheetURL);
+            const text = await res.text();
+            const json = JSON.parse(text.substring(47,text.length-2));
+            
+            if(!json.table.rows || json.table.rows.length===0) break;
 
-fetch(sheetURL)
-.then(res => res.text())
-.then(data => {
-  const json = JSON.parse(data.substring(47,data.length-2));
-  const row = json.table.rows[0]?.c || [];
+            const row = json.table.rows[0].c || [];
+            const title = row[0]?.v;
+            if(!title || title.trim()==="") break;
 
-  const title = row[0]?.v || "";
-  const lyrics = row[1]?.v || "";
-  const image = row[2]?.v || "";
-  const youtube = row[3]?.v || "";
-  const sourceLink = row[4]?.v || "#";
+            // Add to TOC
+            const li = document.createElement("li");
+            const a = document.createElement("a");
+            a.href = "#sheet" + i;
+            a.textContent = `${i}. ${title}`;
+            li.appendChild(a);
+            tocList.appendChild(li);
 
-  const songDiv = document.createElement("div");
-  songDiv.className = "song";
+            // Add sheet content
+            const songDiv = document.createElement("div");
+            songDiv.className = "song";
+            songDiv.id = "sheet" + i;
 
-  // Title as link
-  const h2 = document.createElement("h2");
-  const a = document.createElement("a");
-  a.href = sourceLink;
-  a.textContent = title;
-  a.target = "_blank";
-  h2.appendChild(a);
-  songDiv.appendChild(h2);
+            const h2 = document.createElement("h2");
+            h2.textContent = title;
+            songDiv.appendChild(h2);
 
-  if(image){
-    const img = document.createElement("img");
-    img.src = image;
-    songDiv.appendChild(img);
-  }
+            const lyrics = row[1]?.v || "";
+            const image = row[2]?.v || "";
+            const youtube = row[3]?.v || "";
+            const sourceLink = row[4]?.v || "#";
 
-  if(lyrics){
-    const p = document.createElement("p");
-    p.textContent = lyrics;
-    songDiv.appendChild(p);
-  }
+            if(image){
+                const img = document.createElement("img");
+                img.src = image;
+                songDiv.appendChild(img);
+            }
 
-  if(youtube){
-    const ytId = youtube.includes("v=") ? youtube.split("v=")[1] : youtube.split(".be/")[1];
-    const iframe = document.createElement("iframe");
-    iframe.src = `https://www.youtube.com/embed/${ytId}`;
-    iframe.allowFullscreen = true;
-    songDiv.appendChild(iframe);
-  }
+            if(lyrics){
+                const p = document.createElement("p");
+                p.textContent = lyrics;
+                songDiv.appendChild(p);
+            }
 
-  const wmText = document.createElement("div");
-  wmText.className = "watermark-text";
-  wmText.textContent = "www.perontips.co.ke";
-  songDiv.appendChild(wmText);
+            if(youtube){
+                const ytId = youtube.includes("v=") ? youtube.split("v=")[1] : youtube.split(".be/")[1];
+                const iframe = document.createElement("iframe");
+                iframe.src = `https://www.youtube.com/embed/${ytId}`;
+                iframe.allowFullscreen = true;
+                songDiv.appendChild(iframe);
+            }
 
-  const wmImg = document.createElement("img");
-  wmImg.src = "peron.png";
-  wmImg.className = "watermark-img";
-  songDiv.appendChild(wmImg);
+            const wmText = document.createElement("div");
+            wmText.className = "watermark-text";
+            wmText.textContent = "www.perontips.co.ke";
+            songDiv.appendChild(wmText);
 
-  contentDiv.appendChild(songDiv);
-});
+            const wmImg = document.createElement("img");
+            wmImg.src = "peron.png";
+            wmImg.className = "watermark-img";
+            songDiv.appendChild(wmImg);
+
+            pdfContent.appendChild(songDiv);
+
+            i++;
+        }catch(e){
+            console.log(`Sheet ${sheetName} not found or empty.`);
+            break;
+        }
+    }
+    tocDiv.appendChild(tocList);
+}
+
+loadSheets();
 
 // Download PDF button
 document.getElementById("downloadBtn").addEventListener("click", ()=>{
-  html2pdf().set({
-    margin:0.3,
-    filename: pdfTitle + ".pdf",
-    image: {type:'jpeg', quality:0.98},
-    html2canvas: {scale:2},
-    jsPDF: {unit:'in', format:'a4', orientation:'portrait'}
-  }).from(contentDiv).save();
+    html2pdf().set({
+        margin:0.3,
+        filename:"KCSE_Courses_Library.pdf",
+        image: {type:'jpeg', quality:0.98},
+        html2canvas: {scale:2},
+        jsPDF: {unit:'in', format:'a4', orientation:'portrait'}
+    }).from(pdfContent).save();
 });
 </script>
-
 </body>
 </html>
