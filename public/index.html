@@ -5,11 +5,37 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>KCSE & Courses PDF Library</title>
 <style>
-body { font-family: Georgia, serif; background: #f4f4f4; margin:0; padding:20px; }
-h1 { text-align:center; color:#003366; }
-ul { max-width: 800px; margin:auto; padding:0; list-style:none; }
-li { background:#fff; margin:10px 0; padding:15px 20px; font-size:18px; border-left:6px solid #00b894; cursor:pointer; box-shadow:0 2px 6px rgba(0,0,0,0.1); transition:0.2s; }
-li:hover { background:#e0f7fa; }
+body {
+  font-family: Georgia, serif;
+  background: #f4f4f4;
+  margin:0;
+  padding:20px;
+}
+h1 {
+  text-align:center;
+  color:#003366;
+  margin-bottom:30px;
+}
+ul {
+  max-width: 900px;
+  margin:auto;
+  padding:0;
+  list-style:none;
+}
+li {
+  background:#fff;
+  margin:10px 0;
+  padding:15px 20px;
+  font-size:18px;
+  border-left:6px solid #00b894;
+  cursor:pointer;
+  box-shadow:0 2px 6px rgba(0,0,0,0.1);
+  transition:0.2s;
+  border-radius:8px;
+}
+li:hover {
+  background:#e0f7fa;
+}
 </style>
 </head>
 <body>
@@ -18,43 +44,40 @@ li:hover { background:#e0f7fa; }
 
 <script>
 const spreadsheetId = "1X8XY51OIVpMX5BMsnnsEpuuYsdvRsnSxbmWFbidbTBs";
+const sheetName = "Sheet1"; // Only one sheet needed; each row = one PDF
 const ul = document.getElementById("exam-list");
 
-async function loadSheets() {
-  let i = 1;
-  while(true) {
-    const sheetName = `Sheet${i}`;
-    const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
-    try {
-      const res = await fetch(sheetURL);
-      const text = await res.text();
-      const json = JSON.parse(text.substring(47,text.length-2));
-      
-      // Stop if no rows exist in the sheet
-      if(!json.table.rows || json.table.rows.length === 0) break;
+async function loadPDFs() {
+  const sheetURL = `https://docs.google.com/spreadsheets/d/${spreadsheetId}/gviz/tq?tqx=out:json&sheet=${sheetName}`;
+  try {
+    const res = await fetch(sheetURL);
+    const text = await res.text();
+    const json = JSON.parse(text.substring(47, text.length-2));
+    const rows = json.table.rows;
 
-      const firstRow = json.table.rows[0].c || [];
-      const title = firstRow[0]?.v;
+    rows.forEach((row, index) => {
+      const title = row.c[0]?.v; // Column A
+      const notes = row.c[1]?.v; // Column B
+      const img = row.c[2]?.v;   // Column C
 
-      // Only include sheet if title exists
-      if(!title || title.trim() === "") break;
+      if(title && title.trim() !== "") {
+        const li = document.createElement("li");
+        li.textContent = `${index+1}. ${title}`;
+        li.addEventListener("click", ()=> {
+          const url = `pdf-view.html?row=${index}&title=${encodeURIComponent(title)}&sheet=${sheetName}`;
+          window.location.href = url;
+        });
+        ul.appendChild(li);
+      }
+    });
 
-      const li = document.createElement("li");
-      li.textContent = `${i}. ${title}`;
-      li.addEventListener("click",()=> {
-        window.location.href = `pdf-view.html?sheet=${sheetName}&title=${encodeURIComponent(title)}`;
-      });
-      ul.appendChild(li);
-
-      i++;
-    } catch(e) {
-      console.log(`Sheet ${sheetName} not found or empty.`);
-      break; // stop loop on any error
-    }
+  } catch(e) {
+    console.error("Error loading sheet:", e);
+    ul.innerHTML = "<li>Unable to load PDFs. Please check the sheet.</li>";
   }
 }
 
-loadSheets();
+loadPDFs();
 </script>
 </body>
 </html>
