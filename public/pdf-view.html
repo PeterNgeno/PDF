@@ -2,29 +2,102 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>PDF Viewer</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <style>
-body {font-family: Georgia, serif; background:#f4f4f4; margin:0; padding:20px;}
-#pdf-content {max-width:900px; margin:auto; background:#fff; padding:40px; border-radius:12px; box-shadow:0 5px 20px rgba(0,0,0,0.2);}
-h1 {text-align:center; color:#003366; font-size:36px; margin-bottom:40px;}
-.song {margin-bottom:50px; position:relative;}
-.song h2 {font-size:28px; color:#003366; text-align:center; margin-bottom:20px; border-bottom:2px solid #00b894; padding-bottom:5px;}
-.song img {width:100%; max-height:350px; object-fit:cover; border-radius:12px; box-shadow:0 5px 15px rgba(0,0,0,0.15); margin-bottom:20px;}
-.song p {white-space:pre-wrap; line-height:1.7; font-size:18px; color:#222; margin-bottom:20px;}
-.song iframe {width:100%; height:360px; border-radius:12px; margin-bottom:20px; box-shadow:0 5px 15px rgba(0,0,0,0.15); border:0;}
-.watermark-text {position:absolute; top:10px; right:10px; font-size:18px; color:rgba(0,0,0,0.15);}
-.watermark-img {position:absolute; bottom:10px; right:10px; width:80px; opacity:0.1;}
-.download-btn {display:block; margin:30px auto; padding:15px 25px; background:#00b894; color:#fff; font-size:18px; border:none; border-radius:8px; cursor:pointer;}
-.download-btn:hover {background:#00976a;}
+body {
+  font-family: Georgia, serif; 
+  background:#f4f4f4; 
+  margin:0; 
+  padding:20px;
+}
+
+#pdf-content {
+  max-width:900px; 
+  margin:auto; 
+  background:#fff; 
+  padding:40px; 
+  border-radius:12px; 
+  box-shadow:0 5px 20px rgba(0,0,0,0.2);
+}
+
+h1 {
+  text-align:center; 
+  color:#003366; 
+  font-size:36px; 
+  margin-bottom:40px;
+}
+
+.song {
+  margin-bottom:50px; 
+  position:relative;
+}
+
+.song img {
+  width:100%; 
+  max-height:350px; 
+  object-fit:cover; 
+  border-radius:12px; 
+  box-shadow:0 5px 15px rgba(0,0,0,0.15); 
+  margin-bottom:20px;
+}
+
+.song p {
+  white-space:pre-wrap; 
+  line-height:1.7; 
+  font-size:18px; 
+  color:#222; 
+  margin-bottom:20px;
+}
+
+.song iframe {
+  width:100%; 
+  height:360px; 
+  border-radius:12px; 
+  margin-bottom:20px; 
+  box-shadow:0 5px 15px rgba(0,0,0,0.15); 
+  border:0;
+}
+
+.watermark-text {
+  position:absolute; 
+  top:10px; 
+  right:10px; 
+  font-size:18px; 
+  color:rgba(0,0,0,0.15);
+}
+
+.watermark-img {
+  position:absolute; 
+  bottom:10px; 
+  right:10px; 
+  width:80px; 
+  opacity:0.1;
+}
+
+.download-btn {
+  display:block; 
+  margin:30px auto; 
+  padding:15px 25px; 
+  background:#00b894; 
+  color:#fff; 
+  font-size:18px; 
+  border:none; 
+  border-radius:8px; 
+  cursor:pointer;
+}
+
+.download-btn:hover {
+  background:#00976a;
+}
 </style>
 </head>
 <body>
 
 <div id="pdf-content">
-<h1 id="pdf-title"></h1>
-<div id="sheet-content"></div>
+  <h1 id="pdf-title"></h1>
+  <div id="sheet-content"></div>
 </div>
 
 <button class="download-btn" id="downloadBtn">Download PDF</button>
@@ -48,8 +121,8 @@ fetch(sheetURL)
         return;
     }
 
+    // Only read the first row of the sheet
     const row = json.table.rows[0].c || [];
-    const title = row[0]?.v || pdfTitle;
     const lyrics = row[1]?.v || "";
     const image = row[2]?.v || "";
     const youtube = row[3]?.v || "";
@@ -57,11 +130,6 @@ fetch(sheetURL)
 
     const songDiv = document.createElement("div");
     songDiv.className = "song";
-
-    // Title
-    const h2 = document.createElement("h2");
-    h2.textContent = title;
-    songDiv.appendChild(h2);
 
     // Image
     if(image){
@@ -100,7 +168,7 @@ fetch(sheetURL)
     sheetContentDiv.appendChild(songDiv);
 });
 
-// Download PDF
+// Download PDF button
 document.getElementById("downloadBtn").addEventListener("click", ()=>{
     html2pdf().set({
         margin:0.3,
